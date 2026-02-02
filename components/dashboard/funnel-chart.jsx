@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import {
   Bar,
   BarChart,
@@ -11,9 +12,32 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer } from '@/components/ui/chart'
-import { funnelData } from '@/lib/mock-data'
+
+// Colores corporativos para el funnel
+const COLORS = ['#0f2d4c', '#1a4a7a', '#f7a90c', '#d4920a', '#24c65d', '#6b7280']
 
 export function FunnelChart() {
+  const [funnelData, setFunnelData] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/funnel')
+      .then(res => res.json())
+      .then(data => {
+        const dataWithColors = data.map((item, index) => ({
+          ...item,
+          color: COLORS[index % COLORS.length]
+        }))
+        setFunnelData(dataWithColors)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return <div className="text-muted-foreground p-4">Cargando funnel...</div>
+  }
+
   return (
     <Card className="border-border/50 bg-card">
       <CardHeader className="pb-2">

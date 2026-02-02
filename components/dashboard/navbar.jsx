@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, UserCheck, LogOut } from "lucide-react";
 
 const navItems = [
   {
@@ -17,6 +17,11 @@ const navItems = [
     label: "Contactos",
     href: "/leads",
     icon: Users,
+  },
+  {
+    label: "Clientes",
+    href: "/clientes",
+    icon: UserCheck,
   },
 ];
 

@@ -1,19 +1,33 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { leadsVencidos } from '@/lib/mock-data'
 import { Phone, Mail, AlertCircle, Download } from 'lucide-react'
 
 // Colores corporativos para estados
 const estadoColors = {
-  Nuevo: 'bg-[#0f2d4c]/20 text-[#0f2d4c] border-[#0f2d4c]/30',
-  Contactado: 'bg-[#1a4a7a]/20 text-[#1a4a7a] border-[#1a4a7a]/30',
-  Interesado: 'bg-[#f7a90c]/20 text-[#f7a90c] border-[#f7a90c]/30',
+  nuevo: 'bg-[#0f2d4c]/20 text-[#0f2d4c] border-[#0f2d4c]/30',
+  contactado: 'bg-[#1a4a7a]/20 text-[#1a4a7a] border-[#1a4a7a]/30',
+  interesado: 'bg-[#f7a90c]/20 text-[#f7a90c] border-[#f7a90c]/30',
+  convertido: 'bg-[#24c65d]/20 text-[#24c65d] border-[#24c65d]/30',
 }
 
 export function ExpiredLeadsTable() {
+  const [leadsVencidos, setLeadsVencidos] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/leads-vencidos')
+      .then(res => res.json())
+      .then(data => {
+        setLeadsVencidos(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
   const handleExportCSV = () => {
     const headers = ['Nombre', 'Email', 'Teléfono', 'Días sin contacto', 'Último contacto', 'Estado']
     const rows = leadsVencidos.map(lead => [
@@ -27,7 +41,7 @@ export function ExpiredLeadsTable() {
     
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
     ].join('\n')
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -35,6 +49,10 @@ export function ExpiredLeadsTable() {
     link.href = URL.createObjectURL(blob)
     link.download = `leads_vencidos_${new Date().toISOString().split('T')[0]}.csv`
     link.click()
+  }
+
+  if (loading) {
+    return <div className="text-muted-foreground p-4">Cargando leads vencidos...</div>
   }
 
   return (

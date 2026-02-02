@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Navbar } from "@/components/dashboard/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,49 +23,63 @@ import {
 } from "@/components/ui/select";
 import { Search, Filter, Download, Phone, Mail, MessageSquare, X } from "lucide-react";
 
-// Mock data para contactos
-const mockContacts = [
-  { id: 1, nombre: "María García", email: "maria.garcia@email.com", telefono: "+52 55 1234 5678", curso: "Marketing Digital", canal: "Facebook", etapa: "Nuevo", asesor: "Carlos Méndez", fechaCreacion: "2026-01-28", ultimoContacto: "2026-01-28" },
-  { id: 2, nombre: "Juan Pérez", email: "juan.perez@email.com", telefono: "+52 55 2345 6789", curso: "Diseño UX/UI", canal: "Google Ads", etapa: "Contactado", asesor: "Ana López", fechaCreacion: "2026-01-25", ultimoContacto: "2026-01-30" },
-  { id: 3, nombre: "Laura Sánchez", email: "laura.sanchez@email.com", telefono: "+52 55 3456 7890", curso: "Desarrollo Web", canal: "Instagram", etapa: "Interesado", asesor: "Carlos Méndez", fechaCreacion: "2026-01-20", ultimoContacto: "2026-01-29" },
-  { id: 4, nombre: "Roberto Hernández", email: "roberto.h@email.com", telefono: "+52 55 4567 8901", curso: "Data Science", canal: "Referido", etapa: "Negociando", asesor: "Luis Torres", fechaCreacion: "2026-01-15", ultimoContacto: "2026-02-01" },
-  { id: 5, nombre: "Carmen Díaz", email: "carmen.diaz@email.com", telefono: "+52 55 5678 9012", curso: "Marketing Digital", canal: "WhatsApp", etapa: "Convertido", asesor: "Ana López", fechaCreacion: "2026-01-10", ultimoContacto: "2026-02-01" },
-  { id: 6, nombre: "Miguel Rodríguez", email: "miguel.r@email.com", telefono: "+52 55 6789 0123", curso: "Diseño UX/UI", canal: "Orgánico", etapa: "Nuevo", asesor: "Luis Torres", fechaCreacion: "2026-01-30", ultimoContacto: "2026-01-30" },
-  { id: 7, nombre: "Patricia López", email: "patricia.l@email.com", telefono: "+52 55 7890 1234", curso: "Desarrollo Web", canal: "Facebook", etapa: "Contactado", asesor: "Carlos Méndez", fechaCreacion: "2026-01-22", ultimoContacto: "2026-01-28" },
-  { id: 8, nombre: "Fernando Castro", email: "fernando.c@email.com", telefono: "+52 55 8901 2345", curso: "Data Science", canal: "Google Ads", etapa: "Interesado", asesor: "Ana López", fechaCreacion: "2026-01-18", ultimoContacto: "2026-01-31" },
-  { id: 9, nombre: "Sofía Morales", email: "sofia.m@email.com", telefono: "+52 55 9012 3456", curso: "Marketing Digital", canal: "Instagram", etapa: "Perdido", asesor: "Luis Torres", fechaCreacion: "2025-12-15", ultimoContacto: "2025-12-20" },
-  { id: 10, nombre: "Andrés Ruiz", email: "andres.r@email.com", telefono: "+52 55 0123 4567", curso: "Diseño UX/UI", canal: "Referido", etapa: "Nuevo", asesor: "Carlos Méndez", fechaCreacion: "2026-02-01", ultimoContacto: "2026-02-01" },
-  { id: 11, nombre: "Lucía Vargas", email: "lucia.v@email.com", telefono: "+52 55 1111 2222", curso: "Desarrollo Web", canal: "WhatsApp", etapa: "Negociando", asesor: "Ana López", fechaCreacion: "2026-01-12", ultimoContacto: "2026-02-02" },
-  { id: 12, nombre: "Diego Martínez", email: "diego.m@email.com", telefono: "+52 55 3333 4444", curso: "Data Science", canal: "Orgánico", etapa: "Contactado", asesor: "Luis Torres", fechaCreacion: "2026-01-24", ultimoContacto: "2026-01-27" },
-];
-
-const etapas = ["Todos", "Nuevo", "Contactado", "Interesado", "Negociando", "Convertido", "Perdido"];
-const cursos = ["Todos", "Marketing Digital", "Diseño UX/UI", "Desarrollo Web", "Data Science"];
-const canales = ["Todos", "Facebook", "Google Ads", "Instagram", "Referido", "WhatsApp", "Orgánico"];
-const asesores = ["Todos", "Carlos Méndez", "Ana López", "Luis Torres"];
-
 const etapaColors = {
-  Nuevo: "bg-blue-500/20 text-blue-600 border-blue-500/30",
-  Contactado: "bg-yellow-500/20 text-yellow-600 border-yellow-500/30",
-  Interesado: "bg-purple-500/20 text-purple-600 border-purple-500/30",
-  Negociando: "bg-orange-500/20 text-orange-600 border-orange-500/30",
-  Convertido: "bg-green-500/20 text-green-600 border-green-500/30",
-  Perdido: "bg-red-500/20 text-red-600 border-red-500/30",
+  nuevo: "bg-blue-500/20 text-blue-600 border-blue-500/30",
+  contactado: "bg-yellow-500/20 text-yellow-600 border-yellow-500/30",
+  interesado: "bg-purple-500/20 text-purple-600 border-purple-500/30",
+  negociando: "bg-orange-500/20 text-orange-600 border-orange-500/30",
+  convertido: "bg-green-500/20 text-green-600 border-green-500/30",
+  perdido: "bg-red-500/20 text-red-600 border-red-500/30",
 };
 
 export default function LeadsPage() {
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [etapaFilter, setEtapaFilter] = useState("Todos");
   const [cursoFilter, setCursoFilter] = useState("Todos");
   const [canalFilter, setCanalFilter] = useState("Todos");
   const [asesorFilter, setAsesorFilter] = useState("Todos");
 
+  useEffect(() => {
+    fetch('/api/leads')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setContacts(data);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  // Generar opciones de filtro dinámicamente
+  const etapas = useMemo(() => {
+    const unique = [...new Set(contacts.map(c => c.etapa).filter(Boolean))];
+    return ["Todos", ...unique];
+  }, [contacts]);
+
+  const cursos = useMemo(() => {
+    const unique = [...new Set(contacts.map(c => c.curso).filter(c => c && c !== '-'))];
+    return ["Todos", ...unique];
+  }, [contacts]);
+
+  const canales = useMemo(() => {
+    const unique = [...new Set(contacts.map(c => c.canal).filter(c => c && c !== '-'))];
+    return ["Todos", ...unique];
+  }, [contacts]);
+
+  const asesores = useMemo(() => {
+    const unique = [...new Set(contacts.map(c => c.asesor).filter(c => c && c !== '-'))];
+    return ["Todos", ...unique];
+  }, [contacts]);
+
   const filteredContacts = useMemo(() => {
-    return mockContacts.filter((contact) => {
+    return contacts.filter((contact) => {
       const matchesSearch =
         contact.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.telefono.includes(searchTerm);
+        (contact.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (contact.telefono || '').includes(searchTerm);
 
       const matchesEtapa = etapaFilter === "Todos" || contact.etapa === etapaFilter;
       const matchesCurso = cursoFilter === "Todos" || contact.curso === cursoFilter;
@@ -74,7 +88,7 @@ export default function LeadsPage() {
 
       return matchesSearch && matchesEtapa && matchesCurso && matchesCanal && matchesAsesor;
     });
-  }, [searchTerm, etapaFilter, cursoFilter, canalFilter, asesorFilter]);
+  }, [contacts, searchTerm, etapaFilter, cursoFilter, canalFilter, asesorFilter]);
 
   const activeFiltersCount = [etapaFilter, cursoFilter, canalFilter, asesorFilter].filter(
     (f) => f !== "Todos"
@@ -119,7 +133,7 @@ export default function LeadsPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Contactos</h1>
             <p className="text-muted-foreground">
-              {filteredContacts.length} de {mockContacts.length} contactos
+              {loading ? "Cargando..." : `${filteredContacts.length} de ${contacts.length} contactos`}
             </p>
           </div>
           <Button onClick={exportToCSV} variant="outline" className="gap-2 bg-transparent">

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import {
   Area,
   AreaChart,
@@ -9,7 +10,6 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { leadsPorDia } from '@/lib/mock-data'
 
 // Colores corporativos
 const COLORS = {
@@ -19,6 +19,36 @@ const COLORS = {
 }
 
 export function ActivityChart() {
+  const [leadsPorDia, setLeadsPorDia] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/actividad')
+      .then(res => res.json())
+      .then(data => {
+        setLeadsPorDia(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <Card className="border-border/50 bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium text-foreground">
+            Actividad de Leads (14 días)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+            Cargando...
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="border-border/50 bg-card">
       <CardHeader className="pb-2">
