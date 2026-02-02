@@ -24,6 +24,7 @@ Base de datos Lyon.xlsx
 *.db
 *.sql
 *.xlsx
+*.xlsx
 
 # DB migration and sensitive data
 Base de datos Lyon.xlsx
