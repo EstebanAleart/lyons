@@ -18,6 +18,20 @@ yarn-error.log*
 
 # env files
 .env*
+# DB migration and sensitive data
+Base de datos Lyon.xlsx
+*.sqlite
+*.db
+*.sql
+*.xlsx
+*.xlsx
+
+# DB migration and sensitive data
+Base de datos Lyon.xlsx
+*.sqlite
+*.db
+*.sql
+*.xlsx
 
 # vercel
 .vercel
