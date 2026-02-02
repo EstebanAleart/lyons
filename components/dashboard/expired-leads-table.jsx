@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Phone, Mail, AlertCircle, Download, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Phone, Mail, AlertCircle, Download, Search, ChevronLeft, ChevronRight, X, MessageCircle } from 'lucide-react'
 import {
   fetchAllLeadsVencidosIncrementally,
   setFilter,
@@ -26,6 +26,7 @@ import {
   selectUniqueFilterOptions,
   selectLoadingState,
 } from '@/lib/store/leadsVencidosSlice'
+import { ContactModal } from '@/components/contact-modal'
 
 // Colores corporativos para estados
 const estadoColors = {
@@ -38,6 +39,10 @@ const estadoColors = {
 export function ExpiredLeadsTable() {
   const dispatch = useDispatch()
   const hasFetched = useRef(false)
+  
+  // Estado para el modal de contacto
+  const [contactModalOpen, setContactModalOpen] = useState(false)
+  const [selectedLead, setSelectedLead] = useState(null)
 
   // Selectores Redux
   const filters = useSelector(state => state.leadsVencidos.filters)
@@ -77,6 +82,16 @@ export function ExpiredLeadsTable() {
 
   const handlePerPageChange = (value) => {
     dispatch(setPerPage(parseInt(value)))
+  }
+
+  const handleContactClick = (lead) => {
+    setSelectedLead(lead)
+    setContactModalOpen(true)
+  }
+
+  const handleContactComplete = (leadId, method, comment) => {
+    // Opcionalmente refrescar los datos
+    console.log('Contacto registrado:', { leadId, method, comment })
   }
 
   const handleExportCSV = () => {
@@ -241,6 +256,9 @@ export function ExpiredLeadsTable() {
                     <th className="pb-3 text-left text-xs font-medium text-muted-foreground">
                       Estado
                     </th>
+                    <th className="pb-3 text-left text-xs font-medium text-muted-foreground">
+                      Último comentario
+                    </th>
                     <th className="pb-3 text-right text-xs font-medium text-muted-foreground">
                       Acciones
                     </th>
@@ -249,7 +267,7 @@ export function ExpiredLeadsTable() {
                 <tbody>
                   {paginatedLeads.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
                         No se encontraron leads vencidos
                       </td>
                     </tr>
@@ -298,19 +316,48 @@ export function ExpiredLeadsTable() {
                             {lead.estado}
                           </Badge>
                         </td>
+                        <td className="py-3 max-w-[200px]">
+                          {lead.ultimoComentario ? (
+                            <div className="space-y-1">
+                              <p className="text-xs text-foreground line-clamp-2">
+                                {lead.ultimoComentario}
+                              </p>
+                              {lead.ultimoCanal && (
+                                <Badge variant="secondary" className="text-xs">
+                                  vía {lead.ultimoCanal}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Sin comentarios</span>
+                          )}
+                        </td>
                         <td className="py-3">
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                              onClick={() => handleContactClick(lead)}
+                              title="Contactar por WhatsApp"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-purple-600 hover:text-purple-700 hover:bg-purple-500/10"
+                              onClick={() => handleContactClick(lead)}
+                              title="Llamar"
                             >
                               <Phone className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10"
+                              onClick={() => handleContactClick(lead)}
+                              title="Enviar Email"
                             >
                               <Mail className="h-4 w-4" />
                             </Button>
@@ -354,6 +401,14 @@ export function ExpiredLeadsTable() {
           </>
         )}
       </CardContent>
+      
+      {/* Modal de contacto */}
+      <ContactModal
+        open={contactModalOpen}
+        onOpenChange={setContactModalOpen}
+        lead={selectedLead}
+        onContactComplete={handleContactComplete}
+      />
     </Card>
   )
 }
