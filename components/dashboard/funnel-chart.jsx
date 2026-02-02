@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer } from '@/components/ui/chart'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // Colores corporativos para el funnel
 const COLORS = ['#0f2d4c', '#1a4a7a', '#f7a90c', '#d4920a', '#24c65d', '#6b7280']
@@ -35,7 +36,21 @@ export function FunnelChart() {
   }, [])
 
   if (loading) {
-    return <div className="text-muted-foreground p-4">Cargando funnel...</div>
+    return (
+      <Card className="border-border/50 bg-card">
+        <CardHeader className="pb-2">
+          <Skeleton className="h-5 w-40" />
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="text-sm text-muted-foreground">Cargando funnel...</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

@@ -32,7 +32,12 @@ export function AdvisorPerformance() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-muted-foreground">Cargando...</div>
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="text-sm text-muted-foreground">Cargando asesores...</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
     )

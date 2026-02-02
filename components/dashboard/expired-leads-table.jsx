@@ -52,7 +52,26 @@ export function ExpiredLeadsTable() {
   }
 
   if (loading) {
-    return <div className="text-muted-foreground p-4">Cargando leads vencidos...</div>
+    return (
+      <Card className="border-border/50 bg-card">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-[#f7a90c]" />
+            <CardTitle className="text-base font-medium text-foreground">
+              Leads Vencidos ({'>'}30 días)
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="text-sm text-muted-foreground">Cargando leads vencidos...</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
