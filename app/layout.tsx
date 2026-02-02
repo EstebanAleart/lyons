@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { StoreProvider } from '@/components/providers/store-provider'
 import './globals.css'
 
@@ -39,8 +40,11 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`font-sans antialiased`}>
-        {children}
+        <StoreProvider>
+          {children}
+        </StoreProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

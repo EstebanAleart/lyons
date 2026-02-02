@@ -1,9 +1,17 @@
 // app/api/leads/route.js
-// API Route para obtener leads desde la DB
+// API Route para obtener leads desde la DB con paginación
 import { Lead, Genero, Localidad, Origen, HistorialEstadoLead, EstadoLead, LeadCurso, Curso, Interaccion, Usuario, Canal } from '@/lib/models';
 
 export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const limit = parseInt(searchParams.get('limit') || '500', 10);
+
+    // Obtener total de leads
+    const total = await Lead.count();
+
+    // Obtener chunk de leads
     const leads = await Lead.findAll({
       include: [
         { model: Genero, attributes: ['descripcion'] },
@@ -11,9 +19,11 @@ export async function GET(request) {
         { model: Origen, attributes: ['nombre'] },
         { model: HistorialEstadoLead, include: [{ model: EstadoLead, attributes: ['nombre'] }], order: [['created_at', 'DESC']] },
         { model: LeadCurso, include: [{ model: Curso, attributes: ['nombre'] }] },
-        { model: Interaccion, include: [{ model: Usuario, attributes: ['nombre'] }, { model: Canal, attributes: ['nombre'] }], order: [['created_at', 'DESC']] }
+        { model: Interaccion, include: [{ model: Usuario, attributes: ['nombre'] }, { model: Canal, attributes: ['nombre'] }], order: [['created_at', 'DESC']], limit: 1 }
       ],
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC'], ['id', 'ASC']],
+      offset,
+      limit
     });
 
     // Formatear datos para el frontend
@@ -52,7 +62,15 @@ export async function GET(request) {
       };
     });
 
-    return Response.json(leadsFormateados);
+    const hasMore = offset + leads.length < total;
+
+    return Response.json({
+      leads: leadsFormateados,
+      total,
+      offset,
+      limit,
+      hasMore
+    });
   } catch (error) {
     console.error('Error en /api/leads:', error);
     return Response.json({ error: error.message }, { status: 500 });

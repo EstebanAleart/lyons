@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Navbar } from "@/components/dashboard/navbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -21,7 +23,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, Phone, Mail, UserCheck, X } from "lucide-react";
+import { Search, Download, Phone, Mail, UserCheck, X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  fetchAllClientesIncrementally,
+  setFilter,
+  clearFilters,
+  setPage,
+  setPerPage,
+  selectFilteredClientes,
+  selectPaginatedClientes,
+  selectUniqueFilterOptions,
+  selectLoadingState,
+} from "@/lib/store/clientesSlice";
 
 const estadoColors = {
   activo: "bg-green-500/20 text-green-600 border-green-500/30",
@@ -30,57 +43,61 @@ const estadoColors = {
 };
 
 export default function ClientesPage() {
-  const [clientes, setClientes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [estadoFilter, setEstadoFilter] = useState("Todos");
+  const dispatch = useDispatch();
+  const hasFetched = useRef(false);
+  
+  // Selectores de Redux
+  const filters = useSelector(state => state.clientes.filters);
+  const pagination = useSelector(state => state.clientes.pagination);
+  const { isLoading, isLoadingMore, isFullyLoaded, loadedCount, total, error } = useSelector(selectLoadingState);
+  const filteredClientes = useSelector(selectFilteredClientes);
+  const paginatedClientes = useSelector(selectPaginatedClientes);
+  const filterOptions = useSelector(selectUniqueFilterOptions);
 
+  // Cargar clientes al montar
   useEffect(() => {
-    fetch('/api/clientes')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setClientes(data);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      dispatch(fetchAllClientesIncrementally());
+    }
+  }, [dispatch]);
 
-  const estados = useMemo(() => {
-    const uniqueEstados = [...new Set(clientes.map(c => c.estadoCliente).filter(Boolean))];
-    return ["Todos", ...uniqueEstados];
-  }, [clientes]);
+  // Opciones de filtros
+  const estados = useMemo(() => ["Todos", ...filterOptions.estados], [filterOptions.estados]);
+  const cursos = useMemo(() => ["Todos", ...filterOptions.cursos], [filterOptions.cursos]);
+  const localidades = useMemo(() => ["Todos", ...filterOptions.localidades], [filterOptions.localidades]);
 
-  const filteredClientes = useMemo(() => {
-    return clientes.filter((cliente) => {
-      const fullName = `${cliente.nombre} ${cliente.apellido}`.toLowerCase();
-      const matchesSearch =
-        fullName.includes(searchTerm.toLowerCase()) ||
-        (cliente.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cliente.telefono || '').includes(searchTerm);
+  // Handlers
+  const handleSearchChange = (e) => {
+    dispatch(setFilter({ key: "search", value: e.target.value }));
+  };
 
-      const matchesEstado = estadoFilter === "Todos" || cliente.estadoCliente === estadoFilter;
+  const handleFilterChange = (key, value) => {
+    dispatch(setFilter({ key, value }));
+  };
 
-      return matchesSearch && matchesEstado;
-    });
-  }, [clientes, searchTerm, estadoFilter]);
+  const handleClearFilters = () => {
+    dispatch(clearFilters());
+  };
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setEstadoFilter("Todos");
+  const handlePageChange = (newPage) => {
+    dispatch(setPage(newPage));
+  };
+
+  const handlePerPageChange = (value) => {
+    dispatch(setPerPage(parseInt(value)));
   };
 
   const handleExportCSV = () => {
-    const headers = ['Nombre', 'Apellido', 'Email', 'Teléfono', 'Localidad', 'Estado', 'Fecha Alta'];
+    const headers = ['Nombre', 'Email', 'Teléfono', 'Localidad', 'Curso', 'Estado', 'Fecha Alta'];
     const rows = filteredClientes.map(c => [
       c.nombre,
-      c.apellido,
       c.email,
       c.telefono,
       c.localidad,
+      c.curso,
       c.estadoCliente,
-      c.fechaAlta ? new Date(c.fechaAlta).toLocaleDateString('es-AR') : ''
+      c.fechaAlta
     ]);
     
     const csvContent = [
@@ -95,7 +112,10 @@ export default function ClientesPage() {
     link.click();
   };
 
-  const activeFiltersCount = [estadoFilter].filter(f => f !== "Todos").length;
+  // Paginación
+  const totalPages = Math.ceil(filteredClientes.length / pagination.perPage);
+  const activeFiltersCount = Object.entries(filters).filter(([k, v]) => k !== 'search' && v !== 'Todos').length;
+  const loadProgress = total > 0 ? (loadedCount / total) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -105,7 +125,8 @@ export default function ClientesPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
             <p className="text-muted-foreground">
-              Gestiona tus clientes convertidos
+              {loadedCount.toLocaleString()} de {total.toLocaleString()} clientes cargados
+              {isFullyLoaded && " ✓"}
             </p>
           </div>
           <Button onClick={handleExportCSV} variant="outline" className="gap-2">
@@ -113,6 +134,24 @@ export default function ClientesPage() {
             Exportar CSV
           </Button>
         </div>
+
+        {/* Progress bar mientras carga */}
+        {!isFullyLoaded && total > 0 && (
+          <Card className="border-border/50">
+            <CardContent className="py-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cargando clientes...</span>
+                  <span className="font-medium">{loadedCount.toLocaleString()} / {total.toLocaleString()}</span>
+                </div>
+                <Progress value={loadProgress} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  {Math.round(loadProgress)}% - Puedes empezar a buscar mientras se cargan más datos
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-border/50">
           <CardHeader className="pb-4">
@@ -122,15 +161,15 @@ export default function ClientesPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por nombre, email o teléfono..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filters.search}
+                  onChange={handleSearchChange}
                   className="pl-10"
                 />
               </div>
 
               {/* Filters */}
               <div className="flex gap-2 flex-wrap">
-                <Select value={estadoFilter} onValueChange={setEstadoFilter}>
+                <Select value={filters.estado} onValueChange={(v) => handleFilterChange("estado", v)}>
                   <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Estado" />
                   </SelectTrigger>
@@ -143,10 +182,36 @@ export default function ClientesPage() {
                   </SelectContent>
                 </Select>
 
+                <Select value={filters.curso} onValueChange={(v) => handleFilterChange("curso", v)}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Curso" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cursos.map((curso) => (
+                      <SelectItem key={curso} value={curso}>
+                        {curso}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.localidad} onValueChange={(v) => handleFilterChange("localidad", v)}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Localidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {localidades.map((loc) => (
+                      <SelectItem key={loc} value={loc}>
+                        {loc}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 {activeFiltersCount > 0 && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+                  <Button variant="ghost" size="sm" onClick={handleClearFilters} className="gap-1">
                     <X className="h-4 w-4" />
-                    Limpiar
+                    Limpiar ({activeFiltersCount})
                   </Button>
                 )}
               </div>
@@ -154,14 +219,34 @@ export default function ClientesPage() {
           </CardHeader>
 
           <CardContent>
-            {loading ? (
+            {isLoading && loadedCount === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 Cargando clientes...
               </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">
+                Error: {error}
+              </div>
             ) : (
               <>
-                <div className="text-sm text-muted-foreground mb-4">
-                  Mostrando {filteredClientes.length} de {clientes.length} clientes
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {paginatedClientes.length} de {filteredClientes.length} clientes
+                    {filters.search && ` (filtrados de ${loadedCount})`}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Por página:</span>
+                    <Select value={pagination.perPage.toString()} onValueChange={handlePerPageChange}>
+                      <SelectTrigger className="w-[80px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="rounded-md border border-border/50 overflow-hidden">
@@ -170,6 +255,7 @@ export default function ClientesPage() {
                       <TableRow className="bg-muted/50">
                         <TableHead>Cliente</TableHead>
                         <TableHead>Contacto</TableHead>
+                        <TableHead>Curso</TableHead>
                         <TableHead>Localidad</TableHead>
                         <TableHead>Estado</TableHead>
                         <TableHead>Fecha Alta</TableHead>
@@ -177,14 +263,14 @@ export default function ClientesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredClientes.length === 0 ? (
+                      {paginatedClientes.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                             No se encontraron clientes
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredClientes.map((cliente) => (
+                        paginatedClientes.map((cliente) => (
                           <TableRow key={cliente.id} className="hover:bg-muted/30">
                             <TableCell>
                               <div className="flex items-center gap-3">
@@ -193,10 +279,10 @@ export default function ClientesPage() {
                                 </div>
                                 <div>
                                   <p className="font-medium text-foreground">
-                                    {cliente.nombre} {cliente.apellido}
+                                    {cliente.nombre}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {cliente.genero}
+                                    {cliente.genero || '-'}
                                   </p>
                                 </div>
                               </div>
@@ -208,6 +294,9 @@ export default function ClientesPage() {
                                   {cliente.telefono || '-'}
                                 </p>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{cliente.curso || '-'}</span>
                             </TableCell>
                             <TableCell>
                               <span className="text-sm">{cliente.localidad || '-'}</span>
@@ -222,9 +311,7 @@ export default function ClientesPage() {
                             </TableCell>
                             <TableCell>
                               <span className="text-sm text-muted-foreground">
-                                {cliente.fechaAlta 
-                                  ? new Date(cliente.fechaAlta).toLocaleDateString('es-AR')
-                                  : '-'}
+                                {cliente.fechaAlta || '-'}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -243,6 +330,35 @@ export default function ClientesPage() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Página {pagination.page} de {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Anterior
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page === totalPages}
+                      >
+                        Siguiente
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </CardContent>

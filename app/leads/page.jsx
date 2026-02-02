@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Navbar } from "@/components/dashboard/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -21,7 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Download, Phone, Mail, MessageSquare, X } from "lucide-react";
+import { Search, Filter, Download, Phone, Mail, MessageSquare, X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  fetchAllLeadsIncrementally,
+  setFilter,
+  clearFilters,
+  setPage,
+  selectPaginatedLeads,
+  selectUniqueFilterOptions,
+  selectLoadingState,
+} from "@/lib/store/leadsSlice";
 
 const etapaColors = {
   nuevo: "bg-blue-500/20 text-blue-600 border-blue-500/30",
@@ -33,78 +44,35 @@ const etapaColors = {
 };
 
 export default function LeadsPage() {
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [etapaFilter, setEtapaFilter] = useState("Todos");
-  const [cursoFilter, setCursoFilter] = useState("Todos");
-  const [canalFilter, setCanalFilter] = useState("Todos");
-  const [asesorFilter, setAsesorFilter] = useState("Todos");
+  const dispatch = useDispatch();
+  const hasFetched = useRef(false);
+  const filters = useSelector((state) => state.leads.filters);
+  const { leads, totalFiltered, totalPages, currentPage } = useSelector(selectPaginatedLeads);
+  const filterOptions = useSelector(selectUniqueFilterOptions);
+  const { isLoading, isLoadingMore, isFullyLoaded, loadedCount, total, progress } = useSelector(selectLoadingState);
 
   useEffect(() => {
-    fetch('/api/leads')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setContacts(data);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    // Evitar doble fetch en React Strict Mode o re-renders
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+    dispatch(fetchAllLeadsIncrementally());
+  }, [dispatch]);
 
-  // Generar opciones de filtro dinámicamente
-  const etapas = useMemo(() => {
-    const unique = [...new Set(contacts.map(c => c.etapa).filter(Boolean))];
-    return ["Todos", ...unique];
-  }, [contacts]);
-
-  const cursos = useMemo(() => {
-    const unique = [...new Set(contacts.map(c => c.curso).filter(c => c && c !== '-'))];
-    return ["Todos", ...unique];
-  }, [contacts]);
-
-  const canales = useMemo(() => {
-    const unique = [...new Set(contacts.map(c => c.canal).filter(c => c && c !== '-'))];
-    return ["Todos", ...unique];
-  }, [contacts]);
-
-  const asesores = useMemo(() => {
-    const unique = [...new Set(contacts.map(c => c.asesor).filter(c => c && c !== '-'))];
-    return ["Todos", ...unique];
-  }, [contacts]);
-
-  const filteredContacts = useMemo(() => {
-    return contacts.filter((contact) => {
-      const matchesSearch =
-        contact.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (contact.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (contact.telefono || '').includes(searchTerm);
-
-      const matchesEtapa = etapaFilter === "Todos" || contact.etapa === etapaFilter;
-      const matchesCurso = cursoFilter === "Todos" || contact.curso === cursoFilter;
-      const matchesCanal = canalFilter === "Todos" || contact.canal === canalFilter;
-      const matchesAsesor = asesorFilter === "Todos" || contact.asesor === asesorFilter;
-
-      return matchesSearch && matchesEtapa && matchesCurso && matchesCanal && matchesAsesor;
-    });
-  }, [contacts, searchTerm, etapaFilter, cursoFilter, canalFilter, asesorFilter]);
-
-  const activeFiltersCount = [etapaFilter, cursoFilter, canalFilter, asesorFilter].filter(
-    (f) => f !== "Todos"
-  ).length;
-
-  const clearFilters = () => {
-    setEtapaFilter("Todos");
-    setCursoFilter("Todos");
-    setCanalFilter("Todos");
-    setAsesorFilter("Todos");
-    setSearchTerm("");
+  const handleFilterChange = (key, value) => {
+    dispatch(setFilter({ key, value }));
   };
 
-  const exportToCSV = () => {
+  const handleClearFilters = () => {
+    dispatch(clearFilters());
+  };
+
+  const handlePageChange = (newPage) => {
+    dispatch(setPage(newPage));
+  };
+
+  const handleExportCSV = () => {
     const headers = ["Nombre", "Email", "Teléfono", "Curso", "Canal", "Etapa", "Asesor", "Fecha Creación", "Último Contacto"];
-    const rows = filteredContacts.map((c) => [
+    const rows = leads.map((c) => [
       c.nombre,
       c.email,
       c.telefono,
@@ -116,13 +84,15 @@ export default function LeadsPage() {
       c.ultimoContacto,
     ]);
 
-    const csvContent = [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const csvContent = [headers, ...rows].map((row) => row.map(cell => `"${cell || ''}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "contactos.csv";
+    link.download = `contactos_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
+
+  const activeFiltersCount = Object.values(filters).filter((f) => f !== "Todos" && f !== "").length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,15 +102,42 @@ export default function LeadsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Contactos</h1>
-            <p className="text-muted-foreground">
-              {loading ? "Cargando..." : `${filteredContacts.length} de ${contacts.length} contactos`}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-muted-foreground">
+                {totalFiltered.toLocaleString()} de {loadedCount.toLocaleString()} contactos cargados
+              </p>
+              {!isFullyLoaded && (
+                <span className="text-xs text-muted-foreground">
+                  (cargando más en segundo plano...)
+                </span>
+              )}
+            </div>
           </div>
-          <Button onClick={exportToCSV} variant="outline" className="gap-2 bg-transparent">
+          <Button onClick={handleExportCSV} variant="outline" className="gap-2 bg-transparent">
             <Download className="h-4 w-4" />
             Exportar CSV
           </Button>
         </div>
+
+        {/* Loading Progress */}
+        {!isFullyLoaded && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="py-3">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium">Cargando contactos...</span>
+                    <span className="text-sm text-muted-foreground">
+                      {loadedCount.toLocaleString()} / {total.toLocaleString()}
+                    </span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+                <div className="text-2xl font-bold text-primary">{progress}%</div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Filters */}
         <Card>
@@ -156,7 +153,7 @@ export default function LeadsPage() {
                 )}
               </CardTitle>
               {activeFiltersCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground">
+                <Button variant="ghost" size="sm" onClick={handleClearFilters} className="gap-1 text-muted-foreground">
                   <X className="h-4 w-4" />
                   Limpiar
                 </Button>
@@ -170,19 +167,19 @@ export default function LeadsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar nombre, email, teléfono..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange("search", e.target.value)}
                   className="pl-9"
                 />
               </div>
 
               {/* Etapa Filter */}
-              <Select value={etapaFilter} onValueChange={setEtapaFilter}>
+              <Select value={filters.etapa} onValueChange={(v) => handleFilterChange("etapa", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Etapa" />
                 </SelectTrigger>
                 <SelectContent>
-                  {etapas.map((etapa) => (
+                  {filterOptions.etapas.map((etapa) => (
                     <SelectItem key={etapa} value={etapa}>
                       {etapa}
                     </SelectItem>
@@ -191,12 +188,12 @@ export default function LeadsPage() {
               </Select>
 
               {/* Curso Filter */}
-              <Select value={cursoFilter} onValueChange={setCursoFilter}>
+              <Select value={filters.curso} onValueChange={(v) => handleFilterChange("curso", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Curso" />
                 </SelectTrigger>
                 <SelectContent>
-                  {cursos.map((curso) => (
+                  {filterOptions.cursos.map((curso) => (
                     <SelectItem key={curso} value={curso}>
                       {curso}
                     </SelectItem>
@@ -205,12 +202,12 @@ export default function LeadsPage() {
               </Select>
 
               {/* Canal Filter */}
-              <Select value={canalFilter} onValueChange={setCanalFilter}>
+              <Select value={filters.canal} onValueChange={(v) => handleFilterChange("canal", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Canal" />
                 </SelectTrigger>
                 <SelectContent>
-                  {canales.map((canal) => (
+                  {filterOptions.canales.map((canal) => (
                     <SelectItem key={canal} value={canal}>
                       {canal}
                     </SelectItem>
@@ -219,12 +216,12 @@ export default function LeadsPage() {
               </Select>
 
               {/* Asesor Filter */}
-              <Select value={asesorFilter} onValueChange={setAsesorFilter}>
+              <Select value={filters.asesor} onValueChange={(v) => handleFilterChange("asesor", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Asesor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {asesores.map((asesor) => (
+                  {filterOptions.asesores.map((asesor) => (
                     <SelectItem key={asesor} value={asesor}>
                       {asesor}
                     </SelectItem>
@@ -238,67 +235,130 @@ export default function LeadsPage() {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Contacto</TableHead>
-                    <TableHead>Curso</TableHead>
-                    <TableHead>Canal</TableHead>
-                    <TableHead>Etapa</TableHead>
-                    <TableHead>Asesor</TableHead>
-                    <TableHead>Último Contacto</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredContacts.length === 0 ? (
+            {isLoading && loadedCount === 0 ? (
+              <div className="h-[400px] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                  <span className="text-muted-foreground">Cargando contactos...</span>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No se encontraron contactos con los filtros aplicados
-                      </TableCell>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Contacto</TableHead>
+                      <TableHead>Curso</TableHead>
+                      <TableHead>Canal</TableHead>
+                      <TableHead>Etapa</TableHead>
+                      <TableHead>Asesor</TableHead>
+                      <TableHead>Último Contacto</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredContacts.map((contact) => (
-                      <TableRow key={contact.id}>
-                        <TableCell className="font-medium">{contact.nombre}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-sm">{contact.email}</span>
-                            <span className="text-xs text-muted-foreground">{contact.telefono}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{contact.curso}</TableCell>
-                        <TableCell>{contact.canal}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={etapaColors[contact.etapa]}>
-                            {contact.etapa}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{contact.asesor}</TableCell>
-                        <TableCell>{contact.ultimoContacto}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MessageSquare className="h-4 w-4" />
-                            </Button>
-                          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {leads.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          No se encontraron contactos con los filtros aplicados
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    ) : (
+                      leads.map((contact) => (
+                        <TableRow key={contact.id}>
+                          <TableCell className="font-medium">{contact.nombre}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-sm">{contact.email || '-'}</span>
+                              <span className="text-xs text-muted-foreground">{contact.telefono || '-'}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{contact.curso}</TableCell>
+                          <TableCell>{contact.canal}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={etapaColors[contact.etapa] || ''}>
+                              {contact.etapa}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{contact.asesor}</TableCell>
+                          <TableCell>{contact.ultimoContacto}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Phone className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages} ({totalFiltered.toLocaleString()} resultados)
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let page;
+                  if (totalPages <= 5) {
+                    page = i + 1;
+                  } else if (currentPage <= 3) {
+                    page = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    page = totalPages - 4 + i;
+                  } else {
+                    page = currentPage - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                      className="w-8"
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
