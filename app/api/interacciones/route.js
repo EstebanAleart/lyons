@@ -14,7 +14,7 @@ const METODO_TO_CANAL = {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { leadId, metodo, nota } = body;
+    const { leadId, metodo, nota, usuarioId } = body;
 
     if (!leadId) {
       return Response.json({ error: 'leadId es requerido' }, { status: 400 });
@@ -41,6 +41,7 @@ export async function POST(request) {
       id: uuidv4(),
       lead_id: leadId,
       canal_id: canal.id,
+      usuario_id: usuarioId || null,
       resultado: 'contactado',
       nota: nota || null,
       created_at: now,

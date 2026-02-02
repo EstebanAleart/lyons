@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,14 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Phone, Mail, MessageCircle, Loader2, User, Clock } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Phone, Mail, MessageCircle, Loader2, User, Clock, UserCheck } from 'lucide-react'
 
 const CONTACT_METHODS = [
   {
@@ -77,7 +84,27 @@ export function ContactModal({
 }) {
   const [method, setMethod] = useState('whatsapp')
   const [comment, setComment] = useState('')
+  const [usuarioId, setUsuarioId] = useState('')
+  const [usuarios, setUsuarios] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loadingUsuarios, setLoadingUsuarios] = useState(false)
+
+  // Cargar usuarios/asesores al abrir el modal
+  useEffect(() => {
+    if (open) {
+      setLoadingUsuarios(true)
+      fetch('/api/usuarios')
+        .then(res => res.json())
+        .then(data => {
+          setUsuarios(data)
+          setLoadingUsuarios(false)
+        })
+        .catch(err => {
+          console.error('Error cargando usuarios:', err)
+          setLoadingUsuarios(false)
+        })
+    }
+  }, [open])
 
   const handleContact = async () => {
     if (!lead) return
@@ -93,6 +120,7 @@ export function ContactModal({
           leadId: lead.id,
           metodo: method,
           nota: comment,
+          usuarioId: usuarioId || null,
         }),
       })
       
@@ -130,6 +158,7 @@ export function ContactModal({
       // Cerrar modal y limpiar
       setComment('')
       setMethod('whatsapp')
+      setUsuarioId('')
       onOpenChange(false)
       
     } catch (error) {
@@ -143,6 +172,7 @@ export function ContactModal({
   const handleClose = () => {
     setComment('')
     setMethod('whatsapp')
+    setUsuarioId('')
     onOpenChange(false)
   }
 
@@ -234,6 +264,32 @@ export function ContactModal({
             <p className="text-xs text-muted-foreground">
               Este comentario será visible cuando el lead vuelva a aparecer como vencido
             </p>
+          </div>
+
+          {/* Selector de Asesor */}
+          <div className="space-y-2">
+            <Label htmlFor="asesor" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Asesor responsable
+            </Label>
+            <Select value={usuarioId} onValueChange={setUsuarioId}>
+              <SelectTrigger id="asesor" disabled={loadingUsuarios}>
+                <SelectValue placeholder={loadingUsuarios ? "Cargando..." : "Seleccionar asesor (opcional)"} />
+              </SelectTrigger>
+              <SelectContent>
+                {usuarios.map((usuario) => (
+                  <SelectItem key={usuario.id} value={usuario.id}>
+                    <div className="flex items-center gap-2">
+                      <User className="h-3 w-3" />
+                      {usuario.nombre}
+                      {usuario.rol && (
+                        <span className="text-xs text-muted-foreground">({usuario.rol})</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

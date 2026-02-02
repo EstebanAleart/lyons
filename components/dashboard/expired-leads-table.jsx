@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Phone, Mail, AlertCircle, Download, Search, ChevronLeft, ChevronRight, X, MessageCircle } from 'lucide-react'
+import { Phone, Mail, AlertCircle, Download, Search, ChevronLeft, ChevronRight, X, MessageCircle, Eye } from 'lucide-react'
 import {
   fetchAllLeadsVencidosIncrementally,
   setFilter,
@@ -27,6 +27,7 @@ import {
   selectLoadingState,
 } from '@/lib/store/leadsVencidosSlice'
 import { ContactModal } from '@/components/contact-modal'
+import { LeadDetailDrawer } from '@/components/lead-detail-drawer'
 
 // Colores corporativos para estados
 const estadoColors = {
@@ -43,6 +44,10 @@ export function ExpiredLeadsTable() {
   // Estado para el modal de contacto
   const [contactModalOpen, setContactModalOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
+  
+  // Estado para el drawer de detalle
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
+  const [selectedLeadId, setSelectedLeadId] = useState(null)
 
   // Selectores Redux
   const filters = useSelector(state => state.leadsVencidos.filters)
@@ -92,6 +97,17 @@ export function ExpiredLeadsTable() {
   const handleContactComplete = (leadId, method, comment) => {
     // Opcionalmente refrescar los datos
     console.log('Contacto registrado:', { leadId, method, comment })
+  }
+
+  const handleViewDetail = (leadId) => {
+    setSelectedLeadId(leadId)
+    setDetailDrawerOpen(true)
+  }
+
+  const handleContactFromDrawer = (lead) => {
+    setDetailDrawerOpen(false)
+    setSelectedLead(lead)
+    setContactModalOpen(true)
   }
 
   const handleExportCSV = () => {
@@ -337,6 +353,15 @@ export function ExpiredLeadsTable() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                              onClick={() => handleViewDetail(lead.id)}
+                              title="Ver detalle"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
                               onClick={() => handleContactClick(lead)}
                               title="Contactar por WhatsApp"
@@ -408,6 +433,14 @@ export function ExpiredLeadsTable() {
         onOpenChange={setContactModalOpen}
         lead={selectedLead}
         onContactComplete={handleContactComplete}
+      />
+      
+      {/* Drawer de detalle del lead */}
+      <LeadDetailDrawer
+        open={detailDrawerOpen}
+        onOpenChange={setDetailDrawerOpen}
+        leadId={selectedLeadId}
+        onContact={handleContactFromDrawer}
       />
     </Card>
   )
