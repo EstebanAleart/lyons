@@ -1,17 +1,4 @@
-
 'use client'
-
-import { useEffect, useState } from 'react';
-
-// Client-only date formatting to avoid hydration mismatch
-function ClientDate({ dateString }) {
-  const [formatted, setFormatted] = useState(dateString);
-  useEffect(() => {
-    const date = new Date(dateString);
-    setFormatted(date.toLocaleDateString('es-AR'));
-  }, [dateString]);
-  return <>{formatted}</>;
-}
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -103,8 +90,7 @@ export function ExpiredLeadsTable() {
                         {lead.nombre} {lead.apellido}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {/* Avoid hydration mismatch: render raw date, format on client */}
-                        <ClientDate dateString={lead.ultimoContacto} />
+                        Último: {new Date(lead.ultimoContacto).toLocaleDateString('es-AR')}
                       </p>
                     </div>
                   </td>
