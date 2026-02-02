@@ -18,7 +18,7 @@ export function DashboardHeader() {
           Dashboard de Leads
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gestión y análisis de leads inmobiliarios
+          Gestión y análisis de leads educativos
         </p>
       </div>
       <div className="flex items-center gap-3">
