@@ -29,6 +29,7 @@ import {
   setFilter,
   clearFilters,
   setPage,
+  setPerPage,
   selectPaginatedLeads,
   selectUniqueFilterOptions,
   selectLoadingState,
@@ -47,7 +48,7 @@ export default function LeadsPage() {
   const dispatch = useDispatch();
   const hasFetched = useRef(false);
   const filters = useSelector((state) => state.leads.filters);
-  const { leads, totalFiltered, totalPages, currentPage } = useSelector(selectPaginatedLeads);
+  const { leads, totalFiltered, totalPages, currentPage, perPage } = useSelector(selectPaginatedLeads);
   const filterOptions = useSelector(selectUniqueFilterOptions);
   const { isLoading, isLoadingMore, isFullyLoaded, loadedCount, total, progress } = useSelector(selectLoadingState);
 
@@ -68,6 +69,10 @@ export default function LeadsPage() {
 
   const handlePageChange = (newPage) => {
     dispatch(setPage(newPage));
+  };
+
+  const handlePerPageChange = (value) => {
+    dispatch(setPerPage(parseInt(value)));
   };
 
   const handleExportCSV = () => {
@@ -307,11 +312,26 @@ export default function LeadsPage() {
         </Card>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {totalPages > 0 && (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages} ({totalFiltered.toLocaleString()} resultados)
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages} ({totalFiltered.toLocaleString()} resultados)
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Por página:</span>
+                <Select value={perPage.toString()} onValueChange={handlePerPageChange}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
