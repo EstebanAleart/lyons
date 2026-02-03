@@ -1,7 +1,8 @@
 'use client'
 
-import { Card, CardContent } from '@/components/ui/card'
-import { kpiMetrics } from '@/lib/mock-data'
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Users, PhoneCall, TrendingUp, AlertTriangle } from 'lucide-react'
 
 const icons = {
@@ -12,9 +13,45 @@ const icons = {
 }
 
 export function KpiCards() {
+  const [kpis, setKpis] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/kpis')
+      .then(res => res.json())
+      .then(data => {
+        setKpis([
+          { label: 'Total Leads', value: data.totalLeads },
+          { label: 'Tasa de Contacto', value: data.tasaContacto },
+          { label: 'Tasa de Conversión', value: data.tasaConversion },
+          { label: 'Leads Vencidos', value: data.leadsVencidos },
+        ])
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading || !kpis) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="border-border/50 bg-card">
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16 mb-2" />
+              <Skeleton className="h-3 w-20" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {kpiMetrics.map((metric) => {
+      {kpis.map((metric) => {
         const Icon = icons[metric.label] || Users
         const isPositive = metric.change && metric.change > 0
         const isNegative = metric.change && metric.change < 0
