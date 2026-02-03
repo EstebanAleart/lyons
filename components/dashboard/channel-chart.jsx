@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import {
   Bar,
   BarChart,
@@ -9,7 +10,6 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { canalMetrics } from '@/lib/mock-data'
 
 // Colores corporativos
 const COLORS = {
@@ -19,6 +19,39 @@ const COLORS = {
 }
 
 export function ChannelChart() {
+  const [canalMetrics, setCanalMetrics] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/canales')
+      .then(res => res.json())
+      .then(data => {
+        setCanalMetrics(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <Card className="border-border/50 bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium text-foreground">
+            Rendimiento por Canal
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="text-sm text-muted-foreground">Cargando canales...</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="border-border/50 bg-card">
       <CardHeader className="pb-2">

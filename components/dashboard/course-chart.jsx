@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import {
   PieChart,
   Pie,
@@ -8,12 +9,50 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { leadsPorCurso } from '@/lib/mock-data'
 
 // Colores corporativos
 const colors = ['#0f2d4c', '#1a4a7a', '#f7a90c', '#24c65d', '#dc5a5a']
 
 export function CourseChart() {
+  const [leadsPorCurso, setLeadsPorCurso] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/cursos')
+      .then(res => res.json())
+      .then(data => {
+        const total = data.reduce((acc, c) => acc + parseInt(c.cantidad || 0, 10), 0)
+        const cursos = data.map(c => ({
+          curso: c.nombre,
+          cantidad: parseInt(c.cantidad || 0, 10),
+          porcentaje: total > 0 ? ((parseInt(c.cantidad || 0, 10) / total) * 100).toFixed(1) : 0
+        }))
+        setLeadsPorCurso(cursos)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <Card className="border-border/50 bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium text-foreground">
+            Leads por Curso
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="text-sm text-muted-foreground">Cargando cursos...</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="border-border/50 bg-card">
       <CardHeader className="pb-2">

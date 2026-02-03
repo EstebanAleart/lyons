@@ -7,6 +7,7 @@ import { ChannelChart } from "@/components/dashboard/channel-chart";
 import { CourseChart } from "@/components/dashboard/course-chart";
 import { ExpiredLeadsTable } from "@/components/dashboard/expired-leads-table";
 import { AdvisorPerformance } from "@/components/dashboard/advisor-performance";
+import { RecentContactsTable } from "@/components/dashboard/recent-contacts-table";
 
 export default function DashboardPage() {
   return (
@@ -27,7 +28,10 @@ export default function DashboardPage() {
           <AdvisorPerformance />
         </div>
 
-        <ExpiredLeadsTable />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ExpiredLeadsTable />
+          <RecentContactsTable />
+        </div>
       </main>
     </div>
   );
