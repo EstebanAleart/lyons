@@ -372,6 +372,15 @@ export function ExpiredLeadsTable() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                              onClick={() => handleEditLead(lead)}
+                              title="Editar"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                               onClick={() => handleViewDetail(lead.id)}
                               title="Ver detalle"
                             >
