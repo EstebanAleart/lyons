@@ -1,369 +1,393 @@
-# 📚 LeadFlow - Sistema de Gestión de Leads Educativos
+# LeadFlow CRM
 
-Sistema completo de CRM para gestión de leads y clientes en instituciones educativas. Permite el seguimiento, análisis y conversión de prospectos en estudiantes.
+Sistema de gestión de leads y clientes para instituciones educativas.
 
-![LeadFlow](public/images/logo-icon.png)
+## Stack Tecnológico
 
----
-
-## 📋 Índice
-
-1. [Requisitos Previos](#requisitos-previos)
-2. [Instalación](#instalación)
-3. [Configuración](#configuración)
-4. [Estructura del Proyecto](#estructura-del-proyecto)
-5. [Flujo de la Plataforma](#flujo-de-la-plataforma)
-6. [Módulos Principales](#módulos-principales)
-7. [API Endpoints](#api-endpoints)
-8. [Guía de Usuario](#guía-de-usuario)
-
----
-
-## 🔧 Requisitos Previos
-
-- **Node.js** v18 o superior
-- **npm** (gestor de paquetes)
-- **PostgreSQL** v14 o superior
-- **Git**
+| Capa | Tecnología |
+|------|------------|
+| Framework | Next.js 16 (App Router) |
+| Runtime | Node.js 18+ |
+| Lenguaje | JavaScript (ES6+) |
+| Estado | Redux Toolkit |
+| UI | shadcn/ui + Tailwind CSS |
+| ORM | Sequelize 6 |
+| Base de datos | PostgreSQL 14+ |
+| Gráficos | Recharts |
+| Notificaciones | Sonner |
 
 ---
 
-## 🚀 Instalación
+## Requisitos
 
-### 1. Clonar el repositorio
+- Node.js >= 18.x
+- npm >= 9.x
+- PostgreSQL >= 14.x
+
+---
+
+## Instalación
 
 ```bash
-git clone <url-del-repositorio>
+# Clonar repositorio
+git clone <repo-url>
 cd lyons
-```
 
-### 2. Instalar dependencias
-
-```bash
+# Instalar dependencias
 npm install
-```
 
-### 3. Configurar variables de entorno
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con las credenciales de la base de datos
 
-Crear un archivo `.env` en la raíz del proyecto:
-
-```env
-# Base de datos PostgreSQL
-DB_HOST=localhost
-DB_NAME=leadflow
-DB_USER=tu_usuario
-DB_PASS=tu_contraseña
-DB_DIALECT=postgres
-
-# Configuración opcional
-NODE_ENV=development
-```
-
-### 4. Crear la base de datos
-
-```bash
-# Crear las tablas
+# Crear tablas en la base de datos
 node scripts/create-db.js
-```
 
-### 5. Importar datos (opcional)
-
-Si tienes un archivo Excel con leads:
-
-```bash
-node scripts/importExcelLeads.js ruta/al/archivo.xlsx
-```
-
-### 6. Iniciar el servidor de desarrollo
-
-```bash
+# Iniciar en desarrollo
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:3000`
+---
+
+## Variables de Entorno
+
+Crear archivo `.env` en la raíz:
+
+```env
+DB_HOST=<host>
+DB_NAME=<database_name>
+DB_USER=<username>
+DB_PASS=<password>
+DB_DIALECT=postgres
+NODE_ENV=development
+```
+
+> ⚠️ No commitear archivos `.env` con credenciales reales.
 
 ---
 
-## 🏗 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
-lyons/
-├── app/                    # Rutas y páginas (App Router de Next.js)
-│   ├── api/               # API Routes (Backend)
-│   │   ├── leads/         # CRUD de leads
-│   │   ├── clientes/      # CRUD de clientes
-│   │   ├── interacciones/ # Gestión de contactos
-│   │   ├── kpis/          # Indicadores clave
-│   │   └── ...
-│   ├── dashboard/         # Panel principal
-│   ├── leads/             # Gestión de leads
-│   └── clientes/          # Gestión de clientes
-├── components/            # Componentes React
-│   ├── ui/               # Componentes base (shadcn/ui)
-│   ├── dashboard/        # Componentes del dashboard
-│   └── ...
-├── lib/                   # Utilidades y configuración
-│   ├── store/            # Redux slices
-│   ├── models/           # Modelos Sequelize
-│   └── db.js             # Conexión a base de datos
-├── scripts/              # Scripts de utilidad
-└── public/               # Archivos estáticos
+├── app/                          # Next.js App Router
+│   ├── api/                      # API Routes (REST endpoints)
+│   │   ├── leads/               
+│   │   │   ├── route.js          # GET (list), POST (create)
+│   │   │   └── [id]/
+│   │   │       ├── route.js      # GET, PUT, DELETE
+│   │   │       └── convertir/    # POST - convert to client
+│   │   ├── clientes/
+│   │   │   ├── route.js          # GET (list)
+│   │   │   └── [id]/route.js     # GET, PUT, DELETE
+│   │   ├── interacciones/
+│   │   │   ├── route.js          # GET, POST
+│   │   │   └── [id]/route.js     # GET, PUT, DELETE
+│   │   ├── kpis/                 # Dashboard metrics
+│   │   ├── funnel/               # Funnel data
+│   │   ├── actividad/            # Activity chart data
+│   │   ├── canales/              # Channel distribution
+│   │   ├── cursos/               # Course distribution
+│   │   ├── asesores/             # Advisor performance
+│   │   ├── leads-vencidos/       # Expired leads
+│   │   ├── ultimos-contactos/    # Recent contacts
+│   │   └── system-health/        # Health check
+│   ├── dashboard/                # Dashboard page
+│   ├── leads/                    # Leads management page
+│   ├── clientes/                 # Clients management page
+│   ├── layout.tsx                # Root layout
+│   └── page.jsx                  # Landing page
+│
+├── components/
+│   ├── ui/                       # shadcn/ui components
+│   ├── dashboard/                # Dashboard-specific components
+│   │   ├── navbar.jsx
+│   │   ├── kpi-cards.jsx
+│   │   ├── funnel-chart.jsx
+│   │   ├── activity-chart.jsx
+│   │   ├── channel-chart.jsx
+│   │   ├── course-chart.jsx
+│   │   ├── advisor-performance.jsx
+│   │   ├── expired-leads-table.jsx
+│   │   └── recent-contacts-table.jsx
+│   ├── providers/
+│   │   └── store-provider.jsx    # Redux Provider
+│   ├── contact-modal.jsx         # Contact interaction modal
+│   ├── lead-detail-drawer.jsx    # Lead detail sidebar
+│   ├── lead-form-modal.jsx       # Create/Edit lead form
+│   └── cliente-detail-drawer.jsx # Client detail sidebar
+│
+├── lib/
+│   ├── db.js                     # Sequelize connection
+│   ├── utils.ts                  # Utility functions (cn)
+│   ├── models/
+│   │   └── index.js              # Sequelize models & relations
+│   └── store/
+│       ├── index.js              # Redux store configuration
+│       ├── leadsSlice.js         # Leads state management
+│       ├── clientesSlice.js      # Clients state management
+│       ├── leadsVencidosSlice.js # Expired leads state
+│       └── contactosSlice.js     # Recent contacts state
+│
+├── scripts/
+│   ├── create-db.js              # Create database tables
+│   ├── importExcelLeads.js       # Import leads from Excel
+│   ├── migrateToUUID.js          # Migrate IDs to UUID
+│   └── models/                   # Standalone script models
+│
+└── public/
+    └── images/                   # Static assets
 ```
 
 ---
 
-## 🔄 Flujo de la Plataforma
+## Modelo de Datos
 
-### Ciclo de Vida de un Lead
+### Entidades Principales
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   NUEVO     │────▶│ CONTACTADO  │────▶│ INTERESADO  │────▶│ NEGOCIANDO  │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                                                                    │
-                    ┌─────────────┐     ┌─────────────┐             │
-                    │   PERDIDO   │◀────│             │◀────────────┘
-                    └─────────────┘     │ CONVERTIDO  │
-                                        │  (Cliente)  │
-                                        └─────────────┘
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│    Lead      │────▶│   Cliente    │     │  Interaccion │
+└──────────────┘     └──────────────┘     └──────────────┘
+       │                                         │
+       │                                         │
+       ▼                                         ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Localidad   │     │    Curso     │     │   Usuario    │
+└──────────────┘     └──────────────┘     └──────────────┘
+       │                    │                    │
+       ▼                    ▼                    ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│    Genero    │     │  LeadCurso   │     │    Canal     │
+└──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-### Estados de un Lead
+### Tablas
 
-| Estado | Descripción |
-|--------|-------------|
-| **Nuevo** | Lead recién ingresado, sin contactar |
-| **Contactado** | Se realizó el primer contacto |
-| **Interesado** | Mostró interés en el curso |
-| **Negociando** | En proceso de inscripción |
-| **Convertido** | Se convirtió en cliente/estudiante |
-| **Perdido** | No se logró la conversión |
+| Tabla | Descripción |
+|-------|-------------|
+| `leads` | Prospectos/leads del sistema |
+| `clientes` | Leads convertidos a estudiantes |
+| `interacciones` | Historial de contactos |
+| `usuarios` | Asesores/usuarios del sistema |
+| `canales` | Canales de contacto (WhatsApp, Email, Llamada) |
+| `cursos` | Catálogo de cursos disponibles |
+| `lead_cursos` | Relación N:N entre leads y cursos |
+| `localidades` | Catálogo de ubicaciones |
+| `generos` | Catálogo de géneros |
+| `origenes` | Fuentes de captación |
+| `estados_lead` | Estados del funnel |
+| `historial_estado_lead` | Tracking de cambios de estado |
+| `page_views` | Métricas de navegación |
+| `api_metrics` | Métricas de rendimiento de APIs |
 
-### Estados de un Cliente
+### Relaciones
 
-| Estado | Descripción |
-|--------|-------------|
-| **Activo** | Estudiante actualmente inscrito |
-| **Inactivo** | Cliente temporalmente sin actividad |
-| **Egresado** | Completó su formación |
-| **Suspendido** | Inscripción pausada |
+```javascript
+Lead.belongsTo(Genero, { foreignKey: 'genero_id' });
+Lead.belongsTo(Localidad, { foreignKey: 'localidad_id' });
+Lead.belongsTo(Origen, { foreignKey: 'origen_id' });
+Lead.hasOne(Cliente, { foreignKey: 'lead_id' });
+Lead.hasMany(Interaccion, { foreignKey: 'lead_id' });
+Lead.hasMany(HistorialEstadoLead, { foreignKey: 'lead_id' });
+Lead.hasMany(LeadCurso, { foreignKey: 'lead_id' });
+Cliente.belongsTo(Lead, { foreignKey: 'lead_id' });
+Interaccion.belongsTo(Lead, { foreignKey: 'lead_id' });
+Interaccion.belongsTo(Usuario, { foreignKey: 'usuario_id' });
+Interaccion.belongsTo(Canal, { foreignKey: 'canal_id' });
+```
 
 ---
 
-## 📦 Módulos Principales
-
-### 1. Dashboard (`/dashboard`)
-
-Panel principal con visión general del sistema:
-
-- **KPIs**: Total leads, conversiones, tasa de éxito
-- **Gráfico de Embudo**: Visualización del funnel de ventas
-- **Actividad**: Gráfico de interacciones por período
-- **Canales**: Distribución por canal de captación
-- **Cursos**: Interés por curso
-- **Rendimiento de Asesores**: Métricas por asesor
-- **Leads Vencidos**: Leads sin contactar hace +7 días
-- **Últimos Contactos**: Interacciones recientes
-
-### 2. Gestión de Leads (`/leads`)
-
-Módulo completo para administrar prospectos:
-
-#### Funcionalidades:
-- ✅ **Listado paginado** con carga incremental
-- ✅ **Búsqueda** por nombre, email, teléfono
-- ✅ **Filtros** por etapa, canal, curso, localidad
-- ✅ **Crear nuevo lead** con formulario
-- ✅ **Editar lead** existente
-- ✅ **Ver detalle** en drawer lateral
-- ✅ **Contactar** (WhatsApp, Email, Llamada)
-- ✅ **Convertir a cliente**
-- ✅ **Eliminar lead**
-- ✅ **Exportar a CSV**
-
-#### Acciones rápidas por lead:
-| Botón | Acción |
-|-------|--------|
-| 👁️ Ver | Abre drawer con detalle completo |
-| ✏️ Editar | Abre modal de edición |
-| 📱 Contactar | Abre modal de contacto |
-| 🗑️ Eliminar | Elimina (con confirmación) |
-
-### 3. Gestión de Clientes (`/clientes`)
-
-Módulo para administrar estudiantes convertidos:
-
-#### Funcionalidades:
-- ✅ **Listado paginado** con carga incremental
-- ✅ **Búsqueda** por nombre, email, teléfono
-- ✅ **Filtros** por estado, curso, localidad
-- ✅ **Ver detalle** en drawer lateral
-- ✅ **Cambiar estado** (activo/inactivo/egresado/suspendido)
-- ✅ **Revertir a lead** (eliminar como cliente)
-- ✅ **Contactar** cliente
-- ✅ **Exportar a CSV**
-
----
-
-## 🔌 API Endpoints
+## API Reference
 
 ### Leads
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/leads` | Listar leads (paginado) |
-| GET | `/api/leads/[id]` | Obtener lead por ID |
-| POST | `/api/leads` | Crear nuevo lead |
-| PUT | `/api/leads/[id]` | Actualizar lead |
-| DELETE | `/api/leads/[id]` | Eliminar lead |
-| POST | `/api/leads/[id]/convertir` | Convertir a cliente |
+| Method | Endpoint | Query Params | Body | Response |
+|--------|----------|--------------|------|----------|
+| `GET` | `/api/leads` | `limit`, `offset` | - | `{ data: Lead[], total, offset, limit }` |
+| `GET` | `/api/leads/[id]` | - | - | `Lead` con relaciones |
+| `POST` | `/api/leads` | - | `{ nombre, apellido, email, telefono, ... }` | `Lead` |
+| `PUT` | `/api/leads/[id]` | - | `{ ...fields }` | `Lead` |
+| `DELETE` | `/api/leads/[id]` | - | `{ success: true }` |
+| `POST` | `/api/leads/[id]/convertir` | - | - | `{ success: true, cliente }` |
 
 ### Clientes
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/clientes` | Listar clientes |
-| GET | `/api/clientes/[id]` | Obtener cliente por ID |
-| PUT | `/api/clientes/[id]` | Actualizar estado cliente |
-| DELETE | `/api/clientes/[id]` | Eliminar cliente (vuelve a lead) |
+| Method | Endpoint | Query Params | Body | Response |
+|--------|----------|--------------|------|----------|
+| `GET` | `/api/clientes` | `limit`, `offset` | - | `{ data: Cliente[], total, offset, limit }` |
+| `GET` | `/api/clientes/[id]` | - | - | `Cliente` con Lead |
+| `PUT` | `/api/clientes/[id]` | - | `{ estadoCliente }` | `Cliente` |
+| `DELETE` | `/api/clientes/[id]` | - | - | `{ success: true }` |
 
 ### Interacciones
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/interacciones` | Listar interacciones |
-| POST | `/api/interacciones` | Registrar interacción |
-| PUT | `/api/interacciones/[id]` | Actualizar nota |
-| DELETE | `/api/interacciones/[id]` | Eliminar interacción |
+| Method | Endpoint | Body | Response |
+|--------|----------|------|----------|
+| `GET` | `/api/interacciones` | - | `Interaccion[]` |
+| `POST` | `/api/interacciones` | `{ leadId, canalId, usuarioId, nota }` | `Interaccion` |
+| `PUT` | `/api/interacciones/[id]` | `{ nota, usuarioId }` | `Interaccion` |
+| `DELETE` | `/api/interacciones/[id]` | - | `{ success: true }` |
 
 ### Dashboard
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/kpis` | Obtener KPIs |
-| GET | `/api/funnel` | Datos del embudo |
-| GET | `/api/actividad` | Actividad por período |
-| GET | `/api/canales` | Distribución por canal |
-| GET | `/api/cursos` | Distribución por curso |
-| GET | `/api/asesores` | Rendimiento asesores |
-| GET | `/api/leads-vencidos` | Leads sin contactar |
-| GET | `/api/ultimos-contactos` | Contactos recientes |
+| Method | Endpoint | Query Params | Response |
+|--------|----------|--------------|----------|
+| `GET` | `/api/kpis` | - | `{ totalLeads, convertidos, tasaConversion, ... }` |
+| `GET` | `/api/funnel` | - | `{ etapas: { nombre, cantidad }[] }` |
+| `GET` | `/api/actividad` | `dias` | `{ fecha, interacciones }[]` |
+| `GET` | `/api/canales` | - | `{ canal, cantidad }[]` |
+| `GET` | `/api/cursos` | - | `{ curso, cantidad }[]` |
+| `GET` | `/api/asesores` | - | `{ asesor, contactos, conversiones }[]` |
+| `GET` | `/api/leads-vencidos` | `limit`, `offset`, `dias` | `{ data, total }` |
+| `GET` | `/api/ultimos-contactos` | `dias` | `Interaccion[]` |
 
 ---
 
-## 📖 Guía de Usuario
+## Redux State Management
 
-### Acceso al Sistema
+### Slices
 
-1. Ingresa a la URL de la plataforma
-2. Haz clic en **"Iniciar Sesión"**
-3. Serás redirigido al Dashboard
+| Slice | Propósito | Archivo |
+|-------|-----------|---------|
+| `leads` | Gestión de leads con filtros y paginación client-side | `lib/store/leadsSlice.js` |
+| `clientes` | Gestión de clientes | `lib/store/clientesSlice.js` |
+| `leadsVencidos` | Leads sin contactar (+7 días) | `lib/store/leadsVencidosSlice.js` |
+| `contactos` | Últimos contactos realizados | `lib/store/contactosSlice.js` |
 
-### Crear un Nuevo Lead
+### Patrón de Carga Incremental
 
-1. Ve a **Leads** en el menú de navegación
-2. Haz clic en el botón **"+ Nuevo Lead"**
-3. Completa el formulario:
-   - Nombre y Apellido (requerido)
-   - Email
-   - Teléfono
-   - Localidad
-   - Curso de interés
-4. Haz clic en **"Crear Lead"**
+Todos los slices implementan carga incremental con chunks de 1000 registros:
 
-### Contactar un Lead
+```javascript
+const CHUNK_SIZE = 1000;
 
-1. En la lista de leads, busca el lead deseado
-2. Haz clic en el botón de **Contactar** (ícono de teléfono/mensaje)
-3. Selecciona el método de contacto:
-   - **WhatsApp**: Abre WhatsApp Web con el número
-   - **Email**: Abre tu cliente de correo
-   - **Llamada**: Inicia llamada telefónica
-4. Selecciona el asesor que realiza el contacto
-5. Haz clic en **"Contactar"**
-6. **Después del contacto**: Agrega notas sobre la conversación
-7. Haz clic en **"Guardar"** para registrar la interacción
-
-### Convertir Lead a Cliente
-
-1. Abre el detalle del lead (clic en 👁️)
-2. Haz clic en **"Convertir a Cliente"**
-3. Confirma la acción
-4. El lead pasará al módulo de **Clientes**
-
-### Gestionar Clientes
-
-1. Ve a **Clientes** en el menú
-2. Para cambiar estado:
-   - Abre el detalle del cliente
-   - Selecciona el nuevo estado
-   - Haz clic en **"Guardar Cambios"**
-3. Para revertir a lead:
-   - Abre el detalle del cliente
-   - Haz clic en **"Eliminar Cliente"**
-   - El registro vuelve a aparecer como lead
-
-### Ver Leads Vencidos
-
-Los leads vencidos son aquellos sin contactar en los últimos 7 días:
-
-1. En el **Dashboard**, localiza la sección **"Leads Vencidos"**
-2. Usa los filtros para buscar leads específicos
-3. Contacta directamente desde esta vista
-
-### Exportar Datos
-
-1. En la vista de **Leads** o **Clientes**
-2. Aplica los filtros deseados
-3. Haz clic en el botón **"Exportar CSV"**
-4. Se descargará un archivo con los datos filtrados
-
----
-
-## 🛠 Tecnologías Utilizadas
-
-- **Frontend**: Next.js 16, React (JavaScript), Redux Toolkit
-- **UI**: shadcn/ui, Tailwind CSS, Lucide Icons
-- **Backend**: Next.js API Routes
-- **Base de Datos**: PostgreSQL con Sequelize ORM
-- **Notificaciones**: Sonner (toast notifications)
-- **Gráficos**: Recharts
-
----
-
-## 📝 Scripts Disponibles
-
-```bash
-# Desarrollo
-npm run dev       # Inicia servidor de desarrollo
-
-# Producción
-npm run build     # Compila para producción
-npm start         # Inicia servidor de producción
-
-# Base de datos
-node scripts/create-db.js           # Crea tablas
-node scripts/importExcelLeads.js    # Importa leads desde Excel
-node scripts/migrateToUUID.js       # Migra IDs a UUID
-
-# Linting
-npm run lint      # Ejecuta ESLint
+export const fetchAllLeadsIncrementally = createAsyncThunk(
+  'leads/fetchAllIncrementally',
+  async (_, { dispatch }) => {
+    let offset = 0;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const response = await fetch(`/api/leads?limit=${CHUNK_SIZE}&offset=${offset}`);
+      const data = await response.json();
+      
+      dispatch(appendLeads(data.data));
+      
+      offset += CHUNK_SIZE;
+      hasMore = data.data.length === CHUNK_SIZE;
+    }
+  }
+);
 ```
 
 ---
 
-## 🤝 Soporte
+## Ciclo de Vida del Lead
 
-Para reportar bugs o solicitar nuevas funcionalidades, crea un issue en el repositorio.
+```
+NUEVO → CONTACTADO → INTERESADO → NEGOCIANDO → CONVERTIDO (→ Cliente)
+                                      ↓
+                                   PERDIDO
+```
+
+| Estado | Código |
+|--------|--------|
+| Nuevo | `nuevo` |
+| Contactado | `contactado` |
+| Interesado | `interesado` |
+| Negociando | `negociando` |
+| Convertido | `convertido` |
+| Perdido | `perdido` |
+
+### Estados de Cliente
+
+| Estado | Código |
+|--------|--------|
+| Activo | `activo` |
+| Inactivo | `inactivo` |
+| Egresado | `egresado` |
+| Suspendido | `suspendido` |
 
 ---
 
-## 📄 Licencia
+## Scripts de Mantenimiento
 
-Este proyecto es privado y de uso exclusivo.
+```bash
+# Crear/recrear todas las tablas (⚠️ destructivo)
+node scripts/create-db.js
+
+# Importar leads desde archivo Excel
+node scripts/importExcelLeads.js path/to/file.xlsx
+
+# Migrar IDs numéricos a UUID
+node scripts/migrateToUUID.js
+
+# Crear tablas de tracking (pageviews, api_metrics)
+node scripts/createTrackingTables.js
+```
 
 ---
 
-<div align="center">
-  <p>Desarrollado con ❤️ para la gestión educativa</p>
-</div>
+## Desarrollo
+
+```bash
+# Servidor de desarrollo con hot reload
+npm run dev
+
+# Build de producción
+npm run build
+
+# Iniciar servidor de producción
+npm start
+
+# Linting
+npm run lint
+```
+
+### Convenciones
+
+- **Componentes**: PascalCase (`LeadDetailDrawer.jsx`)
+- **Archivos de API**: kebab-case en carpetas (`leads-vencidos/`)
+- **Modelos**: PascalCase singular (`Lead`, `Cliente`)
+- **Tablas DB**: snake_case plural (`leads`, `clientes`)
+- **Redux actions**: camelCase (`fetchAllLeadsIncrementally`)
+
+---
+
+## Despliegue
+
+### Variables de producción requeridas
+
+```env
+DB_HOST=<production_host>
+DB_NAME=<production_db>
+DB_USER=<production_user>
+DB_PASS=<production_password>
+DB_DIALECT=postgres
+NODE_ENV=production
+```
+
+### Build
+
+```bash
+npm run build
+npm start
+```
+
+---
+
+## Troubleshooting
+
+| Problema | Solución |
+|----------|----------|
+| Error de conexión a DB | Verificar variables de entorno y que PostgreSQL esté corriendo |
+| Tablas no existen | Ejecutar `node scripts/create-db.js` |
+| Datos no cargan | Verificar consola del navegador y logs del servidor |
+| CORS errors | Verificar que las rutas de API estén correctas |
+
+---
+
+## Licencia
+
+Proyecto privado. Todos los derechos reservados.
