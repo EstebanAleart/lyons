@@ -91,6 +91,9 @@ export function ContactModal({
   const [usuarios, setUsuarios] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadingUsuarios, setLoadingUsuarios] = useState(false)
+  const [contacted, setContacted] = useState(false) // Ya se abrió el canal de contacto
+  const [saved, setSaved] = useState(false) // Ya se guardó la interacción
+  const [interaccionId, setInteraccionId] = useState(null) // ID de la interacción guardada
 
   // Cargar usuarios/asesores al abrir el modal
   useEffect(() => {
@@ -128,58 +131,95 @@ export function ContactModal({
       return
     }
     
+    // Abrir el canal de contacto (no cierra el modal)
+    let url = ''
+    switch (method) {
+      case 'whatsapp':
+        const waPhone = formatPhoneForWhatsApp(lead.telefono)
+        url = `https://wa.me/${waPhone}`
+        break
+      case 'email':
+        const subject = encodeURIComponent('Seguimiento - ' + (lead.nombre || 'Lead'))
+        const body = encodeURIComponent('')
+        url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lead.email)}&su=${subject}&body=${body}`
+        break
+      case 'llamada':
+        const callPhone = formatPhoneForCall(lead.telefono)
+        url = `tel:${callPhone}`
+        break
+    }
+    
+    if (url) {
+      window.open(url, '_blank')
+      setContacted(true)
+      toast.success('Canal abierto', {
+        description: 'Agrega una nota sobre el contacto y guarda'
+      })
+    }
+  }
+  
+  const handleSave = async (closeAfter = false) => {
+    if (!lead) return
+    
     setIsSubmitting(true)
     
     try {
-      // Guardar la interacción en la DB
-      const response = await fetch('/api/interacciones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: lead.id,
-          metodo: method,
-          nota: comment,
-          usuarioId: usuarioId || null,
-        }),
-      })
+      let response
+      
+      if (saved && interaccionId) {
+        // Actualizar interacción existente
+        response = await fetch(`/api/interacciones/${interaccionId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nota: comment,
+            usuarioId: usuarioId || null,
+          }),
+        })
+      } else {
+        // Crear nueva interacción
+        response = await fetch('/api/interacciones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadId: lead.id,
+            metodo: method,
+            nota: comment,
+            usuarioId: usuarioId || null,
+          }),
+        })
+      }
       
       if (!response.ok) {
         throw new Error('Error al guardar la interacción')
       }
       
-      // Redirigir según el método
-      let url = ''
-      switch (method) {
-        case 'whatsapp':
-          const waPhone = formatPhoneForWhatsApp(lead.telefono)
-          url = `https://wa.me/${waPhone}`
-          break
-        case 'email':
-          const subject = encodeURIComponent('Seguimiento - ' + (lead.nombre || 'Lead'))
-          const body = encodeURIComponent('')
-          url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lead.email)}&su=${subject}&body=${body}`
-          break
-        case 'llamada':
-          const callPhone = formatPhoneForCall(lead.telefono)
-          url = `tel:${callPhone}`
-          break
+      const data = await response.json()
+      
+      if (!saved) {
+        setInteraccionId(data.interaccion?.id || data.id)
+        setSaved(true)
       }
       
-      // Abrir en nueva pestaña/app
-      if (url) {
-        window.open(url, '_blank')
-      }
+      toast.success(saved ? 'Nota actualizada' : 'Contacto registrado', {
+        description: comment ? 'Se guardó la nota del contacto' : 'Interacción registrada'
+      })
       
       // Callback para refrescar datos si es necesario
       if (onContactComplete) {
         onContactComplete(lead.id, method, comment)
       }
       
-      // Cerrar modal y limpiar
-      setComment('')
-      setMethod('whatsapp')
-      setUsuarioId('')
-      onOpenChange(false)
+      if (closeAfter) {
+        // Cerrar modal y limpiar
+        setComment('')
+        setMethod('whatsapp')
+        setUsuarioId('')
+        setContacted(false)
+        setSaved(false)
+        setInteraccionId(null)
+        onOpenChange(false)
+      }
       
     } catch (error) {
       console.error('Error:', error)
@@ -195,6 +235,9 @@ export function ContactModal({
     setComment('')
     setMethod('whatsapp')
     setUsuarioId('')
+    setContacted(false)
+    setSaved(false)
+    setInteraccionId(null)
     onOpenChange(false)
   }
 
@@ -315,30 +358,39 @@ export function ContactModal({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            Cancelar
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="ghost" onClick={handleClose} disabled={isSubmitting} className="sm:mr-auto">
+            {saved ? 'Cerrar' : 'Cancelar'}
           </Button>
-          <Button onClick={handleContact} disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              <>
-                {CONTACT_METHODS.find(m => m.id === method)?.icon && (
-                  <span className="mr-2">
-                    {(() => {
-                      const Icon = CONTACT_METHODS.find(m => m.id === method)?.icon
-                      return Icon ? <Icon className="h-4 w-4" /> : null
-                    })()}
-                  </span>
-                )}
-                Contactar
-              </>
-            )}
-          </Button>
+          
+          <div className="flex gap-2">
+            {/* Botón Guardar/Actualizar nota - siempre visible */}
+            <Button 
+              variant="outline"
+              onClick={() => handleSave(false)} 
+              disabled={isSubmitting || !comment.trim()}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : saved ? (
+                'Actualizar nota'
+              ) : (
+                'Guardar nota'
+              )}
+            </Button>
+            
+            {/* Botón Contactar */}
+            <Button onClick={handleContact}>
+              {(() => {
+                const Icon = CONTACT_METHODS.find(m => m.id === method)?.icon
+                return Icon ? <Icon className="h-4 w-4 mr-2" /> : null
+              })()}
+              {contacted ? 'Contactar de nuevo' : 'Contactar'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
