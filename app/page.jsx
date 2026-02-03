@@ -1,11 +1,12 @@
-"use client";
-
 import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Users, TrendingUp, Shield } from "lucide-react";
+import { auth } from "@/auth";
+import { handleSignIn, handleSignOut } from "./actions/auth-actions";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const session = await auth();
+
   return (
     <div className="min-h-screen bg-[#0f2d4c] flex flex-col">
       {/* Header */}
@@ -20,11 +21,25 @@ export default function LandingPage() {
           />
           <span className="text-white font-bold text-xl hidden sm:block">LeadFlow</span>
         </div>
-        <Link href="/dashboard">
-          <Button className="bg-[#f7a90c] text-[#0f2d4c] hover:bg-[#f7a90c]/90 font-semibold">
-            Iniciar Sesión
-          </Button>
-        </Link>
+        
+        {session?.user ? (
+          <div className="flex items-center gap-4">
+            <span className="text-white text-sm hidden sm:block">
+              Hola, {session.user.name?.split(' ')[0]}
+            </span>
+            <form action={handleSignOut}>
+              <Button className="bg-[#f7a90c] text-[#0f2d4c] hover:bg-[#f7a90c]/90 font-semibold">
+                Cerrar Sesión
+              </Button>
+            </form>
+          </div>
+        ) : (
+          <form action={handleSignIn}>
+            <Button className="bg-[#f7a90c] text-[#0f2d4c] hover:bg-[#f7a90c]/90 font-semibold">
+              Iniciar Sesión
+            </Button>
+          </form>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -49,14 +64,14 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Link href="/dashboard">
+            <form action={handleSignIn}>
               <Button 
                 size="lg" 
                 className="bg-[#f7a90c] text-[#0f2d4c] hover:bg-[#f7a90c]/90 font-semibold px-8"
               >
                 Acceder al Dashboard
               </Button>
-            </Link>
+            </form>
           </div>
         </div>
 
