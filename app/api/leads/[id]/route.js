@@ -168,3 +168,32 @@ export async function PUT(request, { params }) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
+
+// DELETE - Eliminar un lead
+export async function DELETE(request, { params }) {
+  try {
+    const { id } = await params;
+
+    const lead = await Lead.findByPk(id);
+
+    if (!lead) {
+      return Response.json({ error: 'Lead no encontrado' }, { status: 404 });
+    }
+
+    // Eliminar relaciones primero
+    await LeadCurso.destroy({ where: { lead_id: id } });
+    await HistorialEstadoLead.destroy({ where: { lead_id: id } });
+    await Interaccion.destroy({ where: { lead_id: id } });
+
+    // Eliminar el lead
+    await lead.destroy();
+
+    return Response.json({ 
+      message: 'Lead eliminado exitosamente' 
+    });
+    
+  } catch (error) {
+    console.error('Error al eliminar lead:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}

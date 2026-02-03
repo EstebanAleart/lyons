@@ -48,16 +48,19 @@ export async function GET(request) {
 
       return {
         id: lead.id,
-        nombre: `${lead.nombre || ''} ${lead.apellido || ''}`.trim(),
+        nombre: lead.nombre || '',
+        apellido: lead.apellido || '',
         email: lead.email || '',
         telefono: lead.telefono || '',
         curso,
+        cursoId: lead.LeadCursos?.[0]?.Curso?.id || null,
         canal,
         etapa: estado,
         asesor,
         fechaCreacion: lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : '-',
         ultimoContacto,
         localidad: lead.Localidad?.nombre || '',
+        localidadId: lead.localidad_id || null,
         genero: lead.Genero?.descripcion || ''
       };
     });

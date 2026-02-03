@@ -24,7 +24,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Filter, Download, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Filter, Download, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
 import { LeadDetailDrawer } from "@/components/lead-detail-drawer";
@@ -64,6 +75,11 @@ export default function LeadsPage() {
   // Estado para el drawer de detalle
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState(null);
+  
+  // Estado para eliminar
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const filters = useSelector((state) => state.leads.filters);
   const { leads, totalFiltered, totalPages, currentPage, perPage } = useSelector(selectPaginatedLeads);
@@ -122,6 +138,44 @@ export default function LeadsPage() {
   const handleViewDetail = (leadId) => {
     setSelectedLeadId(leadId);
     setDetailDrawerOpen(true);
+  };
+
+  const handleDeleteClick = (lead) => {
+    setLeadToDelete(lead);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!leadToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/leads/${leadToDelete.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al eliminar');
+      }
+      
+      toast.success('Lead eliminado', {
+        description: `${leadToDelete.nombre} ${leadToDelete.apellido}`.trim()
+      });
+      
+      // Refrescar los leads
+      dispatch(resetLeads());
+      hasFetched.current = false;
+      dispatch(fetchAllLeadsIncrementally());
+      
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error', { description: error.message });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setLeadToDelete(null);
+    }
   };
 
   const handleExportCSV = () => {
@@ -353,7 +407,7 @@ export default function LeadsPage() {
                     ) : (
                       leads.map((contact) => (
                         <TableRow key={contact.id}>
-                          <TableCell className="font-medium">{contact.nombre}</TableCell>
+                          <TableCell className="font-medium">{`${contact.nombre} ${contact.apellido}`.trim()}</TableCell>
                           <TableCell>
                             <div className="flex flex-col gap-1">
                               <span className="text-sm">{contact.email || '-'}</span>
@@ -397,6 +451,15 @@ export default function LeadsPage() {
                                 title="Contactar"
                               >
                                 <MessageCircle className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteClick(contact)}
+                                title="Eliminar"
+                              >
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -505,6 +568,30 @@ export default function LeadsPage() {
             handleContactClick(lead);
           }}
         />
+
+        {/* Alert de confirmación para eliminar */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción no se puede deshacer. Se eliminará permanentemente el lead 
+                <span className="font-semibold"> {leadToDelete ? `${leadToDelete.nombre} ${leadToDelete.apellido}`.trim() : ''}</span> y 
+                todos sus datos asociados (interacciones, historial de estados, cursos de interés).
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? 'Eliminando...' : 'Eliminar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

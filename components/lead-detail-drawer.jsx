@@ -25,18 +25,33 @@ import {
   UserCheck,
   Clock,
   ArrowRight,
-  Loader2
+  Loader2,
+  UserPlus
 } from 'lucide-react'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export function LeadDetailDrawer({ 
   open, 
   onOpenChange, 
   leadId,
-  onContact
+  onContact,
+  onConvertSuccess
 }) {
   const [lead, setLead] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false)
+  const [isConverting, setIsConverting] = useState(false)
 
   useEffect(() => {
     if (open && leadId) {
@@ -68,6 +83,44 @@ export function LeadDetailDrawer({
         email: lead.email,
         telefono: lead.telefono,
       })
+    }
+  }
+
+  const handleConvertToClient = async () => {
+    if (!lead) return
+    
+    setIsConverting(true)
+    try {
+      const response = await fetch(`/api/leads/${lead.id}/convertir`, {
+        method: 'POST',
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al convertir')
+      }
+      
+      toast.success('¡Lead convertido a cliente!', {
+        description: `${lead.nombre} ${lead.apellido} ahora es cliente`
+      })
+      
+      // Actualizar el lead local para mostrar que es cliente
+      setLead(prev => ({
+        ...prev,
+        stats: { ...prev.stats, esCliente: true }
+      }))
+      
+      if (onConvertSuccess) {
+        onConvertSuccess(data.clienteId)
+      }
+      
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Error', { description: error.message })
+    } finally {
+      setIsConverting(false)
+      setConvertDialogOpen(false)
     }
   }
 
@@ -149,6 +202,17 @@ export function LeadDetailDrawer({
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Contactar
                 </Button>
+                {!lead.stats?.esCliente && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="flex-1 border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+                    onClick={() => setConvertDialogOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Convertir a Cliente
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -296,6 +360,46 @@ export function LeadDetailDrawer({
           </div>
         ) : null}
       </SheetContent>
+
+      {/* Alert de confirmación para convertir a cliente */}
+      <AlertDialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convertir a Cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas convertir a 
+              <span className="font-semibold"> {lead?.nombre} {lead?.apellido}</span> en cliente?
+              <br /><br />
+              Esta acción:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Creará un nuevo registro de cliente</li>
+                <li>Cambiará el estado del lead a "convertido"</li>
+                <li>Mantendrá todo el historial del lead</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isConverting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConvertToClient}
+              disabled={isConverting}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isConverting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Convirtiendo...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Convertir a Cliente
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   )
 }
