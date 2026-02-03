@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navbar } from "@/components/dashboard/navbar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, Phone, Mail, UserCheck, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Download, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ContactModal } from "@/components/contact-modal";
 import {
   fetchAllClientesIncrementally,
   setFilter,
@@ -45,6 +46,10 @@ const estadoColors = {
 export default function ClientesPage() {
   const dispatch = useDispatch();
   const hasFetched = useRef(false);
+  
+  // Estado para el modal de contacto
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState(null);
   
   // Selectores de Redux
   const filters = useSelector(state => state.clientes.filters);
@@ -86,6 +91,15 @@ export default function ClientesPage() {
 
   const handlePerPageChange = (value) => {
     dispatch(setPerPage(parseInt(value)));
+  };
+
+  const handleContactClick = (cliente) => {
+    setSelectedCliente(cliente);
+    setContactModalOpen(true);
+  };
+
+  const handleContactComplete = (clienteId, method, comment) => {
+    console.log('Contacto registrado:', { clienteId, method, comment });
   };
 
   const handleExportCSV = () => {
@@ -316,11 +330,32 @@ export default function ClientesPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <Phone className="h-4 w-4" />
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
+                                  onClick={() => handleContactClick(cliente)}
+                                  title="Contactar por WhatsApp"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                                  onClick={() => handleContactClick(cliente)}
+                                  title="Enviar Email"
+                                >
                                   <Mail className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-purple-600 hover:text-purple-700 hover:bg-purple-100"
+                                  onClick={() => handleContactClick(cliente)}
+                                  title="Llamar"
+                                >
+                                  <Phone className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -363,6 +398,14 @@ export default function ClientesPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Modal de contacto */}
+        <ContactModal
+          open={contactModalOpen}
+          onOpenChange={setContactModalOpen}
+          lead={selectedCliente}
+          onContactComplete={handleContactComplete}
+        />
       </main>
     </div>
   );
