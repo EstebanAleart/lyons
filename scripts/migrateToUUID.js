@@ -1,7 +1,7 @@
 // scripts/migrateToUUID.js
 // Migración de todas las tablas a UUID
 
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
