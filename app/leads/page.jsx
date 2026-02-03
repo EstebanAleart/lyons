@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navbar } from "@/components/dashboard/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Download, Phone, Mail, MessageSquare, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Filter, Download, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ContactModal } from "@/components/contact-modal";
 import {
   fetchAllLeadsIncrementally,
   setFilter,
@@ -47,6 +49,11 @@ const etapaColors = {
 export default function LeadsPage() {
   const dispatch = useDispatch();
   const hasFetched = useRef(false);
+  
+  // Estado para el modal de contacto
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null);
+  
   const filters = useSelector((state) => state.leads.filters);
   const { leads, totalFiltered, totalPages, currentPage, perPage } = useSelector(selectPaginatedLeads);
   const filterOptions = useSelector(selectUniqueFilterOptions);
@@ -73,6 +80,15 @@ export default function LeadsPage() {
 
   const handlePerPageChange = (value) => {
     dispatch(setPerPage(parseInt(value)));
+  };
+
+  const handleContactClick = (lead) => {
+    setSelectedLead(lead);
+    setContactModalOpen(true);
+  };
+
+  const handleContactComplete = (leadId, method, comment) => {
+    console.log('Contacto registrado:', { leadId, method, comment });
   };
 
   const handleExportCSV = () => {
@@ -234,6 +250,32 @@ export default function LeadsPage() {
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Filtros de contacto */}
+            <div className="flex items-center gap-6 mt-4 pt-4 border-t">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="tieneEmail"
+                  checked={filters.tieneEmail}
+                  onCheckedChange={(checked) => handleFilterChange("tieneEmail", checked)}
+                />
+                <label htmlFor="tieneEmail" className="text-sm font-medium cursor-pointer flex items-center gap-1">
+                  <Mail className="h-3.5 w-3.5" />
+                  Con email
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="tieneTelefono"
+                  checked={filters.tieneTelefono}
+                  onCheckedChange={(checked) => handleFilterChange("tieneTelefono", checked)}
+                />
+                <label htmlFor="tieneTelefono" className="text-sm font-medium cursor-pointer flex items-center gap-1">
+                  <Phone className="h-3.5 w-3.5" />
+                  Con teléfono
+                </label>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -289,17 +331,15 @@ export default function LeadsPage() {
                           <TableCell>{contact.asesor}</TableCell>
                           <TableCell>{contact.ultimoContacto}</TableCell>
                           <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Phone className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Mail className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MessageSquare className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={() => handleContactClick(contact)}
+                              title="Contactar"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -379,6 +419,14 @@ export default function LeadsPage() {
             </div>
           </div>
         )}
+
+        {/* Modal de contacto */}
+        <ContactModal
+          open={contactModalOpen}
+          onOpenChange={setContactModalOpen}
+          lead={selectedLead}
+          onContactComplete={handleContactComplete}
+        />
       </main>
     </div>
   );

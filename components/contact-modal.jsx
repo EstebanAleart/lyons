@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -54,10 +55,12 @@ function formatPhoneForWhatsApp(phone) {
   if (cleaned.startsWith('0')) {
     cleaned = cleaned.substring(1)
   }
-  // Si no tiene código de país, agregar 54 (Argentina)
-  if (!cleaned.startsWith('54')) {
-    cleaned = '54' + cleaned
+  // Si ya tiene código de país válido, usarlo
+  if (cleaned.startsWith('598') || cleaned.startsWith('54') || cleaned.startsWith('55')) {
+    return cleaned
   }
+  // Por defecto agregar 598 (Uruguay)
+  cleaned = '598' + cleaned
   return cleaned
 }
 
@@ -65,12 +68,12 @@ function formatPhoneForCall(phone) {
   if (!phone) return ''
   let cleaned = phone.replace(/\D/g, '')
   if (!cleaned.startsWith('+')) {
-    if (cleaned.startsWith('54')) {
+    if (cleaned.startsWith('598') || cleaned.startsWith('54') || cleaned.startsWith('55')) {
       cleaned = '+' + cleaned
     } else if (cleaned.startsWith('0')) {
-      cleaned = '+54' + cleaned.substring(1)
+      cleaned = '+598' + cleaned.substring(1)
     } else {
-      cleaned = '+54' + cleaned
+      cleaned = '+598' + cleaned
     }
   }
   return cleaned
@@ -109,6 +112,22 @@ export function ContactModal({
   const handleContact = async () => {
     if (!lead) return
     
+    // Validar que tenga email si se seleccionó ese método
+    if (method === 'email' && !lead.email) {
+      toast.warning('Sin email', {
+        description: 'Este contacto no tiene email registrado'
+      })
+      return
+    }
+    
+    // Validar que tenga teléfono si se seleccionó WhatsApp o llamada
+    if ((method === 'whatsapp' || method === 'llamada') && !lead.telefono) {
+      toast.warning('Sin teléfono', {
+        description: 'Este contacto no tiene teléfono registrado'
+      })
+      return
+    }
+    
     setIsSubmitting(true)
     
     try {
@@ -137,7 +156,8 @@ export function ContactModal({
           break
         case 'email':
           const subject = encodeURIComponent('Seguimiento - ' + (lead.nombre || 'Lead'))
-          url = `mailto:${lead.email}?subject=${subject}`
+          const body = encodeURIComponent('')
+          url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lead.email)}&su=${subject}&body=${body}`
           break
         case 'llamada':
           const callPhone = formatPhoneForCall(lead.telefono)
@@ -163,7 +183,9 @@ export function ContactModal({
       
     } catch (error) {
       console.error('Error:', error)
-      alert('Error al registrar el contacto')
+      toast.error('Error', {
+        description: 'No se pudo registrar el contacto'
+      })
     } finally {
       setIsSubmitting(false)
     }

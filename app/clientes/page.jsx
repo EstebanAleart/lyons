@@ -329,35 +329,15 @@ export default function ClientesPage() {
                               </span>
                             </TableCell>
                             <TableCell>
-                              <div className="flex justify-end gap-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
-                                  onClick={() => handleContactClick(cliente)}
-                                  title="Contactar por WhatsApp"
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
-                                  onClick={() => handleContactClick(cliente)}
-                                  title="Enviar Email"
-                                >
-                                  <Mail className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-purple-600 hover:text-purple-700 hover:bg-purple-100"
-                                  onClick={() => handleContactClick(cliente)}
-                                  title="Llamar"
-                                >
-                                  <Phone className="h-4 w-4" />
-                                </Button>
-                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={() => handleContactClick(cliente)}
+                                title="Contactar"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))

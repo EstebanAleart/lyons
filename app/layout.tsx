@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { StoreProvider } from '@/components/providers/store-provider'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -43,6 +44,7 @@ export default function RootLayout({
         <StoreProvider>
           {children}
         </StoreProvider>
+        <Toaster richColors position="top-center" />
         <Analytics />
         <SpeedInsights />
       </body>
