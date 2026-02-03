@@ -200,9 +200,9 @@ export default function ClientesPage() {
 
         <Card className="border-border/50">
           <CardHeader className="pb-4">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-3">
               {/* Search */}
-              <div className="relative flex-1">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por nombre, email o teléfono..."
@@ -213,9 +213,9 @@ export default function ClientesPage() {
               </div>
 
               {/* Filters */}
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-2 md:flex gap-2">
                 <Select value={filters.estado} onValueChange={(v) => handleFilterChange("estado", v)}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-full md:w-[140px]">
                     <SelectValue placeholder="Estado" />
                   </SelectTrigger>
                   <SelectContent>
@@ -228,7 +228,7 @@ export default function ClientesPage() {
                 </Select>
 
                 <Select value={filters.curso} onValueChange={(v) => handleFilterChange("curso", v)}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full md:w-[160px]">
                     <SelectValue placeholder="Curso" />
                   </SelectTrigger>
                   <SelectContent>
@@ -241,7 +241,7 @@ export default function ClientesPage() {
                 </Select>
 
                 <Select value={filters.localidad} onValueChange={(v) => handleFilterChange("localidad", v)}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full md:w-[160px]">
                     <SelectValue placeholder="Localidad" />
                   </SelectTrigger>
                   <SelectContent>
@@ -256,7 +256,7 @@ export default function ClientesPage() {
                 {activeFiltersCount > 0 && (
                   <Button variant="ghost" size="sm" onClick={handleClearFilters} className="gap-1">
                     <X className="h-4 w-4" />
-                    Limpiar ({activeFiltersCount})
+                    Limpiar
                   </Button>
                 )}
               </div>
@@ -274,15 +274,14 @@ export default function ClientesPage() {
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                   <div className="text-sm text-muted-foreground">
-                    Mostrando {paginatedClientes.length} de {filteredClientes.length} clientes
-                    {filters.search && ` (filtrados de ${loadedCount})`}
+                    {paginatedClientes.length} de {filteredClientes.length} clientes
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Por página:</span>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">Por página:</span>
                     <Select value={pagination.perPage.toString()} onValueChange={handlePerPageChange}>
-                      <SelectTrigger className="w-[80px]">
+                      <SelectTrigger className="w-[70px] h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -295,7 +294,7 @@ export default function ClientesPage() {
                 </div>
 
                 {/* Mobile: Cards */}
-                <div className="md:hidden divide-y">
+                <div className="md:hidden divide-y border rounded-lg">
                   {paginatedClientes.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       No se encontraron clientes
@@ -307,45 +306,45 @@ export default function ClientesPage() {
                         className="p-4 hover:bg-muted/50 cursor-pointer active:bg-muted transition-colors"
                         onClick={() => handleViewDetail(cliente.id)}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500/10 flex-shrink-0">
-                              <UserCheck className="h-4 w-4 text-green-600" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">
-                                {cliente.nombre}
-                              </p>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {cliente.email || cliente.telefono || 'Sin contacto'}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs ${estadoColors[cliente.estadoCliente] || estadoColors.activo}`}
-                                >
-                                  {cliente.estadoCliente || 'activo'}
-                                </Badge>
-                                {cliente.curso && (
-                                  <span className="text-xs text-muted-foreground truncate">
-                                    {cliente.curso}
-                                  </span>
-                                )}
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10 flex-shrink-0">
+                            <UserCheck className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium truncate">
+                                  {cliente.nombre}
+                                </p>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {cliente.email || cliente.telefono || 'Sin contacto'}
+                                </p>
                               </div>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs flex-shrink-0 ${estadoColors[cliente.estadoCliente] || estadoColors.activo}`}
+                              >
+                                {cliente.estadoCliente || 'activo'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-muted-foreground truncate">
+                                {cliente.curso || 'Sin curso'}
+                              </span>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="h-7 text-xs gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleContactClick(cliente);
+                                }}
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                                Contactar
+                              </Button>
                             </div>
                           </div>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="h-8 gap-1 flex-shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleContactClick(cliente);
-                            }}
-                          >
-                            <MessageCircle className="h-3.5 w-3.5" />
-                            Contactar
-                          </Button>
                         </div>
                       </div>
                     ))
