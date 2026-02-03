@@ -47,6 +47,7 @@ import {
   setPerPage,
   resetLeads,
   markLeadAsClient,
+  updateLeadEtapa,
   selectPaginatedLeads,
   selectUniqueFilterOptions,
   selectLoadingState,
@@ -179,6 +180,42 @@ export default function LeadsPage() {
     }
   };
 
+  const handleEtapaChangeInline = async (leadId, nuevaEtapa, leadNombre) => {
+    // Obtener etapa anterior para poder revertir si falla
+    const lead = leads.find(l => l.id === leadId);
+    const etapaAnterior = lead?.etapaActual || lead?.etapa || 'nuevo';
+    
+    // OPTIMISTIC UPDATE: Actualizar Redux inmediatamente
+    dispatch(updateLeadEtapa({ leadId, etapa: nuevaEtapa }));
+    
+    toast.success('Etapa actualizada', {
+      description: `${leadNombre} → ${nuevaEtapa}`
+    });
+    
+    // Luego hacer el POST en background
+    try {
+      const response = await fetch(`/api/leads/${leadId}/etapa`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          etapa: nuevaEtapa,
+          cambiadoPor: 'Usuario'
+        })
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Error al guardar');
+      }
+      
+    } catch (error) {
+      // REVERTIR si falla el servidor
+      console.error('Error:', error);
+      dispatch(updateLeadEtapa({ leadId, etapa: etapaAnterior }));
+      toast.error('Error al guardar', { description: 'Se revirtió el cambio' });
+    }
+  };
+
   const handleExportCSV = () => {
     const headers = ["Nombre", "Email", "Teléfono", "Curso", "Canal", "Etapa", "Asesor", "Fecha Creación", "Último Contacto"];
     const rows = leads.map((c) => [
@@ -291,14 +328,64 @@ export default function LeadsPage() {
               {/* Etapa Filter */}
               <Select value={filters.etapa} onValueChange={(v) => handleFilterChange("etapa", v)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Etapa" />
+                  <SelectValue placeholder="Filtrar por etapa">
+                    {filters.etapa === 'Todos' ? (
+                      <span className="text-muted-foreground">Todas las etapas</span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${
+                          filters.etapa === 'nuevo' ? 'bg-blue-500' :
+                          filters.etapa === 'contactado' ? 'bg-yellow-500' :
+                          filters.etapa === 'interesado' ? 'bg-purple-500' :
+                          filters.etapa === 'negociando' ? 'bg-orange-500' :
+                          filters.etapa === 'convertido' ? 'bg-green-500' :
+                          filters.etapa === 'perdido' ? 'bg-red-500' : 'bg-gray-400'
+                        }`} />
+                        {filters.etapa.charAt(0).toUpperCase() + filters.etapa.slice(1)}
+                      </div>
+                    )}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {filterOptions.etapas.map((etapa) => (
-                    <SelectItem key={etapa} value={etapa}>
-                      {etapa}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="Todos">
+                    <span>Todas las etapas</span>
+                  </SelectItem>
+                  <SelectItem value="nuevo">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                      Nuevo
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="contactado">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                      Contactado
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="interesado">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-500" />
+                      Interesado
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="negociando">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-orange-500" />
+                      Negociando
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="convertido">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      Convertido
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="perdido">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                      Perdido
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -406,8 +493,8 @@ export default function LeadsPage() {
                             {contact.email || contact.telefono || 'Sin contacto'}
                           </p>
                           <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline" className={`text-xs ${etapaColors[contact.etapa] || ''}`}>
-                              {contact.etapa}
+                            <Badge variant="outline" className={`text-xs ${etapaColors[contact.etapaActual || contact.etapa] || ''}`}>
+                              {contact.etapaActual || contact.etapa}
                             </Badge>
                             {contact.curso && (
                               <span className="text-xs text-muted-foreground truncate">
@@ -466,9 +553,62 @@ export default function LeadsPage() {
                           <TableCell>{contact.curso}</TableCell>
                           <TableCell>{contact.canal}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={etapaColors[contact.etapa] || ''}>
-                              {contact.etapa}
-                            </Badge>
+                            <Select 
+                              value={contact.etapaActual || contact.etapa || 'nuevo'} 
+                              onValueChange={(value) => handleEtapaChangeInline(contact.id, value, `${contact.nombre} ${contact.apellido}`.trim())}
+                            >
+                              <SelectTrigger className="w-[120px] h-8 text-xs">
+                                <div className={`flex items-center gap-1.5 ${etapaColors[contact.etapaActual || contact.etapa] ? 'px-1.5 py-0.5 rounded' : ''}`}>
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    (contact.etapaActual || contact.etapa) === 'nuevo' ? 'bg-blue-500' :
+                                    (contact.etapaActual || contact.etapa) === 'contactado' ? 'bg-yellow-500' :
+                                    (contact.etapaActual || contact.etapa) === 'interesado' ? 'bg-purple-500' :
+                                    (contact.etapaActual || contact.etapa) === 'negociando' ? 'bg-orange-500' :
+                                    (contact.etapaActual || contact.etapa) === 'convertido' ? 'bg-green-500' :
+                                    (contact.etapaActual || contact.etapa) === 'perdido' ? 'bg-red-500' : 'bg-gray-400'
+                                  }`} />
+                                  <SelectValue />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="nuevo">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                    Nuevo
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="contactado">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                                    Contactado
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="interesado">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                                    Interesado
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="negociando">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                                    Negociando
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="convertido">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                                    Convertido
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="perdido">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                                    Perdido
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                           <TableCell>{contact.asesor}</TableCell>
                           <TableCell>{contact.ultimoContacto}</TableCell>
@@ -618,6 +758,9 @@ export default function LeadsPage() {
           }}
           onConvertSuccess={(leadId) => {
             dispatch(markLeadAsClient(leadId));
+          }}
+          onEtapaChange={(leadId, etapa) => {
+            dispatch(updateLeadEtapa({ leadId, etapa }));
           }}
         />
 

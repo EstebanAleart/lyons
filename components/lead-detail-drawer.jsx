@@ -13,6 +13,13 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { 
   User, 
   Phone, 
@@ -26,7 +33,8 @@ import {
   Clock,
   ArrowRight,
   Loader2,
-  UserPlus
+  UserPlus,
+  ChevronDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -40,12 +48,23 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
+// Configuración de etapas con colores
+const ETAPAS_CONFIG = {
+  nuevo: { label: 'Nuevo', color: 'bg-blue-500/20 text-blue-600 border-blue-500/30' },
+  contactado: { label: 'Contactado', color: 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30' },
+  interesado: { label: 'Interesado', color: 'bg-purple-500/20 text-purple-600 border-purple-500/30' },
+  negociando: { label: 'Negociando', color: 'bg-orange-500/20 text-orange-600 border-orange-500/30' },
+  convertido: { label: 'Convertido', color: 'bg-green-500/20 text-green-600 border-green-500/30' },
+  perdido: { label: 'Perdido', color: 'bg-red-500/20 text-red-600 border-red-500/30' },
+}
+
 export function LeadDetailDrawer({ 
   open, 
   onOpenChange, 
   leadId,
   onContact,
-  onConvertSuccess
+  onConvertSuccess,
+  onEtapaChange
 }) {
   const [lead, setLead] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -73,6 +92,67 @@ export function LeadDetailDrawer({
         })
     }
   }, [open, leadId])
+
+  const handleEtapaChange = async (nuevaEtapa) => {
+    if (!lead) return
+    
+    const etapaAnterior = lead.stats?.estadoActual || 'nuevo'
+    if (nuevaEtapa === etapaAnterior) return
+    
+    // OPTIMISTIC UPDATE: Actualizar estado local inmediatamente
+    setLead(prev => ({
+      ...prev,
+      stats: { ...prev.stats, estadoActual: nuevaEtapa },
+      historialEstados: [
+        { 
+          id: Date.now(), 
+          estado: nuevaEtapa, 
+          fecha: new Date().toISOString(), 
+          cambiadoPor: 'Usuario' 
+        },
+        ...prev.historialEstados
+      ]
+    }))
+    
+    toast.success('Etapa actualizada', {
+      description: `${ETAPAS_CONFIG[etapaAnterior]?.label || etapaAnterior} → ${ETAPAS_CONFIG[nuevaEtapa]?.label || nuevaEtapa}`
+    })
+    
+    // Notificar al componente padre inmediatamente
+    if (onEtapaChange) {
+      onEtapaChange(lead.id, nuevaEtapa)
+    }
+    
+    // Luego hacer el POST en background
+    try {
+      const response = await fetch(`/api/leads/${lead.id}/etapa`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          etapa: nuevaEtapa,
+          cambiadoPor: 'Usuario'
+        })
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Error al guardar')
+      }
+      
+    } catch (error) {
+      // REVERTIR si falla el servidor
+      console.error('Error:', error)
+      setLead(prev => ({
+        ...prev,
+        stats: { ...prev.stats, estadoActual: etapaAnterior },
+        historialEstados: prev.historialEstados.slice(1) // Quitar el que agregamos
+      }))
+      if (onEtapaChange) {
+        onEtapaChange(lead.id, etapaAnterior)
+      }
+      toast.error('Error al guardar', { description: 'Se revirtió el cambio' })
+    }
+  }
 
   const handleContactClick = () => {
     if (lead && onContact) {
@@ -149,9 +229,31 @@ export function LeadDetailDrawer({
                 <UserCheck className="h-3 w-3 mr-1" />
                 Cliente
               </Badge>
-            ) : lead?.stats?.estadoActual && (
-              <Badge variant="outline">{lead.stats.estadoActual}</Badge>
-            )}
+            ) : loading ? (
+              <Skeleton className="h-6 w-24" />
+            ) : lead ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Etapa:</span>
+                <Select 
+                  value={lead.stats?.estadoActual || 'nuevo'} 
+                  onValueChange={handleEtapaChange}
+                >
+                  <SelectTrigger className="w-[140px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(ETAPAS_CONFIG).map(([key, config]) => (
+                      <SelectItem key={key} value={key}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0].replace('/20', '')}`} />
+                          {config.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
           </SheetDescription>
         </SheetHeader>
 
