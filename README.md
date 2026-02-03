@@ -22,7 +22,7 @@ Sistema completo de CRM para gestión de leads y clientes en instituciones educa
 ## 🔧 Requisitos Previos
 
 - **Node.js** v18 o superior
-- **pnpm** (gestor de paquetes)
+- **npm** (gestor de paquetes)
 - **PostgreSQL** v14 o superior
 - **Git**
 
@@ -40,7 +40,7 @@ cd lyons
 ### 2. Instalar dependencias
 
 ```bash
-pnpm install
+npm install
 ```
 
 ### 3. Configurar variables de entorno
@@ -77,7 +77,7 @@ node scripts/importExcelLeads.js ruta/al/archivo.xlsx
 ### 6. Iniciar el servidor de desarrollo
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 La aplicación estará disponible en `http://localhost:3000`
@@ -322,7 +322,7 @@ Los leads vencidos son aquellos sin contactar en los últimos 7 días:
 
 ## 🛠 Tecnologías Utilizadas
 
-- **Frontend**: Next.js 16, React, Redux Toolkit
+- **Frontend**: Next.js 16, React (JavaScript), Redux Toolkit
 - **UI**: shadcn/ui, Tailwind CSS, Lucide Icons
 - **Backend**: Next.js API Routes
 - **Base de Datos**: PostgreSQL con Sequelize ORM
@@ -335,11 +335,11 @@ Los leads vencidos son aquellos sin contactar en los últimos 7 días:
 
 ```bash
 # Desarrollo
-pnpm dev          # Inicia servidor de desarrollo
+npm run dev       # Inicia servidor de desarrollo
 
 # Producción
-pnpm build        # Compila para producción
-pnpm start        # Inicia servidor de producción
+npm run build     # Compila para producción
+npm start         # Inicia servidor de producción
 
 # Base de datos
 node scripts/create-db.js           # Crea tablas
@@ -347,7 +347,7 @@ node scripts/importExcelLeads.js    # Importa leads desde Excel
 node scripts/migrateToUUID.js       # Migra IDs a UUID
 
 # Linting
-pnpm lint         # Ejecuta ESLint
+npm run lint      # Ejecuta ESLint
 ```
 
 ---
