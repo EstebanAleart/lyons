@@ -1,7 +1,7 @@
 // scripts/createTables.js
 // Crear todas las tablas con UUID
 
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 const { sequelize } = require('../lib/models');
 
 async function createTables() {

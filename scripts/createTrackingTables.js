@@ -1,7 +1,7 @@
 // scripts/createTrackingTables.js
 // Crear tablas de tracking para métricas del sistema
 
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 const { sequelize } = require('../lib/db');
 
 async function createTrackingTables() {

@@ -4,7 +4,7 @@
  * Archivo: N1_-_Base_de_datos_Lyon.xlsx
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 
 const fs = require('fs');
 const path = require('path');
@@ -17,7 +17,7 @@ const pool = new Pool({
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASS,
-  port: process.env.DB_PORT || 5432,
+  port: parseInt(process.env.DB_PORT || '5432'),
 });
 
 // Ruta al archivo Excel (en la raíz del proyecto)
