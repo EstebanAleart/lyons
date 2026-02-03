@@ -36,9 +36,9 @@ export function LeadFormModal({
     apellido: '',
     email: '',
     telefono: '',
-    localidadId: '',
-    origenId: '',
-    cursoId: '',
+    localidadId: 'null',
+    origenId: 'null',
+    cursoId: 'null',
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -74,9 +74,9 @@ export function LeadFormModal({
         apellido: lead.apellido || '',
         email: lead.email || '',
         telefono: lead.telefono || '',
-        localidadId: lead.localidadId || '',
-        origenId: lead.origenId || '',
-        cursoId: lead.cursoId || '',
+        localidadId: lead.localidadId || 'null',
+        origenId: lead.origenId || 'null',
+        cursoId: lead.cursoId || 'null',
       })
     } else if (open && !lead) {
       // Reset form para crear nuevo
@@ -85,9 +85,9 @@ export function LeadFormModal({
         apellido: '',
         email: '',
         telefono: '',
-        localidadId: '',
-        origenId: '',
-        cursoId: '',
+        localidadId: 'null',
+        origenId: 'null',
+        cursoId: 'null',
       })
     }
   }, [open, lead])
@@ -116,10 +116,18 @@ export function LeadFormModal({
       const url = isEditing ? `/api/leads/${lead.id}` : '/api/leads'
       const method = isEditing ? 'PUT' : 'POST'
       
+      // Preparar datos convirtiendo "null" string a null
+      const submitData = {
+        ...formData,
+        localidadId: formData.localidadId === 'null' ? null : formData.localidadId,
+        origenId: formData.origenId === 'null' ? null : formData.origenId,
+        cursoId: formData.cursoId === 'null' ? null : formData.cursoId,
+      }
+      
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       })
       
       if (!response.ok) {
@@ -242,7 +250,7 @@ export function LeadFormModal({
                   <SelectValue placeholder={isLoading ? "Cargando..." : "Seleccionar localidad"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin especificar</SelectItem>
+                  <SelectItem value="null">Sin especificar</SelectItem>
                   {localidades.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id}>
                       {loc.nombre}
@@ -264,7 +272,7 @@ export function LeadFormModal({
                   <SelectValue placeholder={isLoading ? "Cargando..." : "Seleccionar origen"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin especificar</SelectItem>
+                  <SelectItem value="null">Sin especificar</SelectItem>
                   {origenes.map((orig) => (
                     <SelectItem key={orig.id} value={orig.id}>
                       {orig.nombre}
@@ -289,7 +297,7 @@ export function LeadFormModal({
                   <SelectValue placeholder={isLoading ? "Cargando..." : "Seleccionar curso"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin especificar</SelectItem>
+                  <SelectItem value="null">Sin especificar</SelectItem>
                   {cursos.map((curso) => (
                     <SelectItem key={curso.id} value={curso.id}>
                       {curso.nombre}
