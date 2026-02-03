@@ -129,20 +129,23 @@ export async function PUT(request, { params }) {
       return Response.json({ error: 'Lead no encontrado' }, { status: 404 });
     }
 
-    if (!nombre || !nombre.trim()) {
+    // Permitir updates parciales (ej: solo teléfono)
+    // Si se envía nombre, validar que no sea vacío
+    if (body.hasOwnProperty('nombre') && (!nombre || !nombre.trim())) {
       return Response.json({ error: 'El nombre es obligatorio' }, { status: 400 });
     }
 
-    // Actualizar el lead
-    await lead.update({
-      nombre: nombre.trim(),
-      apellido: apellido?.trim() || null,
-      email: email?.trim() || null,
-      telefono: telefono?.trim() || null,
-      localidad_id: localidadId || null,
-      origen_id: origenId || null,
-      updated_at: new Date(),
-    });
+    // Construir objeto de actualización solo con campos presentes
+    const updateFields = {};
+    if (body.hasOwnProperty('nombre')) updateFields.nombre = nombre.trim();
+    if (body.hasOwnProperty('apellido')) updateFields.apellido = apellido?.trim() || null;
+    if (body.hasOwnProperty('email')) updateFields.email = email?.trim() || null;
+    if (body.hasOwnProperty('telefono')) updateFields.telefono = telefono?.trim() || null;
+    if (body.hasOwnProperty('localidadId')) updateFields.localidad_id = localidadId || null;
+    if (body.hasOwnProperty('origenId')) updateFields.origen_id = origenId || null;
+    updateFields.updated_at = new Date();
+
+    await lead.update(updateFields);
 
     // Si hay curso, actualizar o crear la relación
     if (cursoId) {

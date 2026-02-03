@@ -36,6 +36,8 @@ import {
   UserPlus,
   ChevronDown
 } from 'lucide-react'
+import { PhoneCountrySelect } from '@/components/ui/phone-country-select'
+import { detectCountryFromPhone, formatInternationalPhone } from '@/lib/phone-utils'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -67,6 +69,21 @@ export function LeadDetailDrawer({
   onEtapaChange
 }) {
   const [lead, setLead] = useState(null)
+  const [country, setCountry] = useState('AR')
+  const [telefono, setTelefono] = useState('')
+  // Detectar país/teléfono cuando se carga el lead
+  useEffect(() => {
+    if (lead && lead.telefono) {
+      let detected = detectCountryFromPhone(lead.telefono)
+      if (detected) {
+        setCountry(detected.code)
+        setTelefono(lead.telefono.replace(detected.dial, ''))
+      } else {
+        setCountry('AR')
+        setTelefono(lead.telefono)
+      }
+    }
+  }, [lead])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [convertDialogOpen, setConvertDialogOpen] = useState(false)
@@ -271,12 +288,26 @@ export function LeadDetailDrawer({
           <div className="mt-6 space-y-6">
             {/* Info básica */}
             <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-              {lead.telefono && (
-                <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{lead.telefono}</span>
+              {/* Teléfono internacional editable */}
+              <div className="flex items-center gap-3">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <div className="flex gap-2 w-full">
+                  <div className="w-36">
+                    <PhoneCountrySelect value={country} onChange={setCountry} />
+                  </div>
+                  <input
+                    type="tel"
+                    className="input input-sm border rounded px-2 py-1 w-full"
+                    placeholder="Teléfono sin prefijo"
+                    value={telefono}
+                    onChange={e => setTelefono(e.target.value.replace(/[^0-9]/g, ''))}
+                    maxLength={15}
+                  />
                 </div>
-              )}
+              </div>
+              <div className="text-xs text-muted-foreground pl-8">
+                Guardado como: <span className="font-mono">{formatInternationalPhone(telefono, country)}</span>
+              </div>
               {lead.email && (
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-muted-foreground" />

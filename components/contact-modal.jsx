@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -22,6 +23,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Phone, Mail, MessageCircle, Loader2, User, Clock, UserCheck } from 'lucide-react'
+import { PhoneCountrySelect } from '@/components/ui/phone-country-select'
+import { COUNTRIES } from '@/lib/countries'
+import { detectCountryFromPhone, formatInternationalPhone } from '@/lib/phone-utils'
 
 const CONTACT_METHODS = [
   {
@@ -85,6 +89,9 @@ export function ContactModal({
   lead,
   onContactComplete 
 }) {
+  // Estado para país y teléfono
+  const [country, setCountry] = useState('AR')
+  const [telefono, setTelefono] = useState('')
   const [method, setMethod] = useState('whatsapp')
   const [comment, setComment] = useState('')
   const [usuarioId, setUsuarioId] = useState('')
@@ -94,10 +101,12 @@ export function ContactModal({
   const [contacted, setContacted] = useState(false) // Ya se abrió el canal de contacto
   const [saved, setSaved] = useState(false) // Ya se guardó la interacción
   const [interaccionId, setInteraccionId] = useState(null) // ID de la interacción guardada
+  // Redux dispatch
+  const dispatch = useDispatch();
 
-  // Cargar usuarios/asesores al abrir el modal
+  // Cargar usuarios/asesores y setear país/teléfono al abrir el modal
   useEffect(() => {
-    if (open) {
+    if (open && lead) {
       setLoadingUsuarios(true)
       fetch('/api/usuarios')
         .then(res => res.json())
@@ -109,34 +118,50 @@ export function ContactModal({
           console.error('Error cargando usuarios:', err)
           setLoadingUsuarios(false)
         })
+      // Detectar país y teléfono
+      let tel = lead.telefono || ''
+      let detected = detectCountryFromPhone(tel)
+      if (detected) {
+        setCountry(detected.code)
+        // Quitar prefijo para mostrar solo el número local
+        setTelefono(tel.replace(detected.dial, ''))
+      } else {
+        setCountry('AR')
+        setTelefono(tel)
+      }
     }
-  }, [open])
+  }, [open, lead])
 
   const handleContact = async () => {
     if (!lead) return
-    
-    // Validar que tenga email si se seleccionó ese método
+    // Validar email
     if (method === 'email' && !lead.email) {
-      toast.warning('Sin email', {
-        description: 'Este contacto no tiene email registrado'
-      })
+      toast.warning('Sin email', { description: 'Este contacto no tiene email registrado' })
       return
     }
-    
-    // Validar que tenga teléfono si se seleccionó WhatsApp o llamada
-    if ((method === 'whatsapp' || method === 'llamada') && !lead.telefono) {
-      toast.warning('Sin teléfono', {
-        description: 'Este contacto no tiene teléfono registrado'
-      })
+    // Validar teléfono
+    if ((method === 'whatsapp' || method === 'llamada') && !telefono) {
+      toast.warning('Sin teléfono', { description: 'Debes ingresar el teléfono' })
       return
     }
-    
-    // Abrir el canal de contacto (no cierra el modal)
+    // Formatear teléfono internacional
+    const intlPhone = formatInternationalPhone(telefono, country)
+    // Si el teléfono cambió, actualizar en Redux (optimista) y backend
+    if (intlPhone !== lead.telefono) {
+      // Optimistic update in Redux
+      dispatch({ type: 'leads/updateLeadTelefono', payload: { leadId: lead.id, telefono: intlPhone } });
+      // Update in backend
+      await fetch(`/api/leads/${lead.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telefono: intlPhone })
+      });
+    }
+    // Abrir canal
     let url = ''
     switch (method) {
       case 'whatsapp':
-        const waPhone = formatPhoneForWhatsApp(lead.telefono)
-        url = `https://wa.me/${waPhone}`
+        url = `https://wa.me/${intlPhone.replace('+','')}`
         break
       case 'email':
         const subject = encodeURIComponent('Seguimiento - ' + (lead.nombre || 'Lead'))
@@ -144,17 +169,13 @@ export function ContactModal({
         url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lead.email)}&su=${subject}&body=${body}`
         break
       case 'llamada':
-        const callPhone = formatPhoneForCall(lead.telefono)
-        url = `tel:${callPhone}`
+        url = `tel:${intlPhone}`
         break
     }
-    
     if (url) {
       window.open(url, '_blank')
       setContacted(true)
-      toast.success('Canal abierto', {
-        description: 'Agrega una nota sobre el contacto y guarda'
-      })
+      toast.success('Canal abierto', { description: 'Agrega una nota sobre el contacto y guarda' })
     }
   }
   
@@ -264,14 +285,27 @@ export function ContactModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Info del lead */}
-          <div className="rounded-lg bg-muted/50 p-3 space-y-1">
-            {lead.telefono && (
-              <p className="text-sm flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                {lead.telefono}
-              </p>
-            )}
+          {/* Info del lead y edición de teléfono internacional */}
+          <div className="rounded-lg bg-muted/50 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <div className="flex gap-2 w-full">
+                <div className="w-36">
+                  <PhoneCountrySelect value={country} onChange={setCountry} />
+                </div>
+                <input
+                  type="tel"
+                  className="input input-sm border rounded px-2 py-1 w-full"
+                  placeholder="Teléfono sin prefijo"
+                  value={telefono}
+                  onChange={e => setTelefono(e.target.value.replace(/[^0-9]/g, ''))}
+                  maxLength={15}
+                />
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground pl-8">
+              Guardado como: <span className="font-mono">{formatInternationalPhone(telefono, country)}</span>
+            </div>
             {lead.email && (
               <p className="text-sm flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />

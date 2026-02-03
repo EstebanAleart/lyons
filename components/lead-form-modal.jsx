@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, User, Mail, Phone, MapPin, BookOpen } from 'lucide-react'
+import { PhoneCountrySelect } from '@/components/ui/phone-country-select'
+import { detectCountryFromPhone, formatInternationalPhone } from '@/lib/phone-utils'
 
 export function LeadFormModal({ 
   open, 
@@ -39,6 +41,8 @@ export function LeadFormModal({
     localidadId: 'null',
     cursoId: 'null',
   })
+  // Estado para país de teléfono
+  const [country, setCountry] = useState('AR')
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -71,16 +75,34 @@ export function LeadFormModal({
   // Cargar datos del lead si estamos editando
   useEffect(() => {
     if (open && lead) {
-      setFormData({
-        nombre: lead.nombre || '',
-        apellido: lead.apellido || '',
-        email: lead.email || '',
-        telefono: lead.telefono || '',
-        localidadId: lead.localidadId || 'null',
-        cursoId: lead.cursoId || 'null',
-      })
+      // Detectar país desde el teléfono si es posible
+      let tel = lead.telefono || ''
+      let detected = detectCountryFromPhone(tel)
+      if (detected) {
+        setCountry(detected.code)
+        // Quitar prefijo para mostrar solo el número local
+        setFormData({
+          nombre: lead.nombre || '',
+          apellido: lead.apellido || '',
+          email: lead.email || '',
+          telefono: tel.replace(detected.dial, ''),
+          localidadId: lead.localidadId || 'null',
+          cursoId: lead.cursoId || 'null',
+        })
+      } else {
+        setCountry('AR')
+        setFormData({
+          nombre: lead.nombre || '',
+          apellido: lead.apellido || '',
+          email: lead.email || '',
+          telefono: tel,
+          localidadId: lead.localidadId || 'null',
+          cursoId: lead.cursoId || 'null',
+        })
+      }
     } else if (open && !lead) {
       // Reset form para crear nuevo
+      setCountry('AR')
       setFormData({
         nombre: '',
         apellido: '',
@@ -99,7 +121,6 @@ export function LeadFormModal({
   // Función para agregar nueva localidad
   const handleAddLocalidad = async () => {
     if (!newLocalidad.trim()) return
-    
     setIsAddingLocalidad(true)
     try {
       const response = await fetch('/api/localidades', {
@@ -107,7 +128,6 @@ export function LeadFormModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: newLocalidad.trim() })
       })
-      
       if (response.ok) {
         const newLoc = await response.json()
         setLocalidades(prev => [...prev, newLoc])
@@ -115,10 +135,15 @@ export function LeadFormModal({
         setNewLocalidad('')
         toast.success('Localidad agregada', { description: newLoc.nombre })
       } else {
-        toast.error('Error al agregar localidad')
+        const error = await response.json()
+        if (response.status === 409 && error.error?.includes('existe')) {
+          toast.error('Ya existe una localidad con ese nombre')
+        } else {
+          toast.error('Error al agregar localidad', { description: error.error || 'Error desconocido' })
+        }
       }
     } catch (error) {
-      toast.error('Error al agregar localidad')
+      toast.error('Error al agregar localidad', { description: error.message })
     } finally {
       setIsAddingLocalidad(false)
     }
@@ -165,6 +190,11 @@ export function LeadFormModal({
       toast.warning('Datos de contacto', { description: 'Debe ingresar al menos un teléfono o email' })
       return
     }
+    // Formatear teléfono internacional antes de enviar
+    let intlPhone = formData.telefono.trim()
+    if (intlPhone) {
+      intlPhone = formatInternationalPhone(intlPhone, country)
+    }
     
     setIsSubmitting(true)
     
@@ -175,6 +205,7 @@ export function LeadFormModal({
       // Preparar datos convirtiendo "null" string a null
       const submitData = {
         ...formData,
+        telefono: intlPhone,
         localidadId: formData.localidadId === 'null' ? null : formData.localidadId,
         cursoId: formData.cursoId === 'null' ? null : formData.cursoId,
       }
@@ -281,19 +312,28 @@ export function LeadFormModal({
               />
             </div>
 
-            {/* Teléfono */}
+            {/* Teléfono internacional con país */}
             <div className="space-y-2">
               <Label htmlFor="telefono" className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 Teléfono
               </Label>
-              <Input
-                id="telefono"
-                placeholder="099 123 456"
-                value={formData.telefono}
-                onChange={(e) => handleChange('telefono', e.target.value)}
-                disabled={isSubmitting}
-              />
+              <div className="flex gap-2">
+                <div className="w-36">
+                  <PhoneCountrySelect value={country} onChange={setCountry} />
+                </div>
+                <Input
+                  id="telefono"
+                  placeholder="Teléfono sin prefijo"
+                  value={formData.telefono}
+                  onChange={e => handleChange('telefono', e.target.value.replace(/[^0-9]/g, ''))}
+                  maxLength={15}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground pl-8">
+                Guardado como: <span className="font-mono">{formatInternationalPhone(formData.telefono, country)}</span>
+              </div>
             </div>
 
             {/* Localidad */}

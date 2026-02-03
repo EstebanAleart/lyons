@@ -130,11 +130,14 @@ export default function LeadsPage() {
     setFormModalOpen(true);
   };
 
-  const handleFormSuccess = () => {
-    // Refrescar los leads
-    dispatch(resetLeads());
-    hasFetched.current = false;
-    dispatch(fetchAllLeadsIncrementally());
+  const handleFormSuccess = (result) => {
+    if (result && result.id) {
+      if (!editingLead) {
+        dispatch({ type: 'leads/addLead', payload: result });
+      } else {
+        dispatch({ type: 'leads/updateLead', payload: result });
+      }
+    }
   };
 
   const handleViewDetail = (leadId) => {
