@@ -7,16 +7,25 @@ import { User } from 'lucide-react'
 
 export function AdvisorPerformance() {
   const [performanceAsesores, setPerformanceAsesores] = useState([])
+  const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch('/api/asesores')
       .then(res => res.json())
       .then(data => {
-        setPerformanceAsesores(data)
+        if (Array.isArray(data)) {
+          setPerformanceAsesores(data)
+        } else {
+          setPerformanceAsesores([])
+          setError(data.error || 'Error desconocido')
+        }
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {
+        setError('Error de red')
+        setLoading(false)
+      })
   }, [])
 
   const maxConversiones = performanceAsesores.length > 0 
@@ -43,6 +52,32 @@ export function AdvisorPerformance() {
     )
   }
 
+  if (error) {
+    let customMsg = null;
+    if (error.includes('no existe la columna Lead.usuario_id')) {
+      customMsg = (
+        <div className="flex flex-col items-center gap-2 py-8">
+          <p className="text-muted-foreground text-sm">No hay asesor asignado a leads.</p>
+          <p className="text-muted-foreground text-xs">Cuando se asignen asesores a leads, verás aquí la estadística de performance.</p>
+        </div>
+      );
+    }
+    return (
+      <Card className="border-border/50 bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium text-foreground">
+            Performance por Asesor
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center">
+            {customMsg || <span className="text-red-500 text-sm">{error}</span>}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="border-border/50 bg-card">
       <CardHeader className="pb-2">
@@ -53,7 +88,10 @@ export function AdvisorPerformance() {
       <CardContent>
         <div className="space-y-4">
           {performanceAsesores.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No hay datos de asesores</p>
+            <div className="flex flex-col items-center gap-2 py-8">
+              <p className="text-muted-foreground text-sm">No hay asesores asignados a leads.</p>
+              <p className="text-muted-foreground text-xs">Cuando se asignen asesores a leads, verás aquí la estadística de performance.</p>
+            </div>
           ) : (
             performanceAsesores.map((asesor) => (
               <div key={asesor.id} className="space-y-2">

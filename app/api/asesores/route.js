@@ -19,12 +19,12 @@ export async function GET() {
     const performance = await Promise.all(usuarios.map(async (usuario) => {
       // Contar contactos (interacciones) del usuario
       const contactos = await Interaccion.count({
-        where: { usuarioId: usuario.id }
+        where: { usuario_id: usuario.id }
       })
 
       // Contar leads asignados
       const leadsAsignados = await Lead.count({
-        where: { usuarioAsignadoId: usuario.id }
+        where: { usuario_id: usuario.id }
       })
 
       // Contar conversiones (leads con estado convertido asignados al usuario)
@@ -32,7 +32,7 @@ export async function GET() {
       if (estadoConvertido) {
         conversiones = await Lead.count({
           where: { 
-            usuarioAsignadoId: usuario.id,
+            usuario_id: usuario.id,
             estadoActualId: estadoConvertido.id
           }
         })

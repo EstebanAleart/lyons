@@ -28,14 +28,14 @@ export default async function DashboardPage() {
     redirect("/")
   }
   
+  let userData
+  
   try {
     // Verificar/crear usuario en la base de datos
     const result = await pool.query(
       'SELECT * FROM usuarios WHERE email = $1',
       [session.user.email]
     )
-    
-    let userData
     
     if (result.rows.length === 0) {
       // Crear usuario nuevo con rol 'usuario' y activo false
@@ -47,39 +47,6 @@ export default async function DashboardPage() {
     } else {
       userData = result.rows[0]
     }
-    
-    // Verificar que sea vendedor activo
-    if (userData.rol !== "vendedor" || !userData.activo) {
-      redirect("/no-autorizado")
-    }
-    
-    // Usuario autorizado - mostrar dashboard
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="p-4 md:p-6 space-y-6">
-          <DashboardHeader />
-          <KpiCards />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <FunnelChart />
-            <ActivityChart />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <ChannelChart />
-            <CourseChart />
-            <AdvisorPerformance />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ExpiredLeadsTable />
-            <RecentContactsTable />
-          </div>
-        </main>
-      </div>
-    );
-    
   } catch (error) {
     console.error("Error al verificar usuario:", error)
     return (
@@ -91,4 +58,36 @@ export default async function DashboardPage() {
       </div>
     )
   }
+  
+  // Verificar que sea asesor activo - FUERA DEL TRY-CATCH
+  if (userData.rol !== "asesor" || !userData.activo) {
+    redirect("/no-autorizado")
+  }
+  
+  // Usuario autorizado - mostrar dashboard
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <main className="p-4 md:p-6 space-y-6">
+        <DashboardHeader />
+        <KpiCards />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <FunnelChart />
+          <ActivityChart />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ChannelChart />
+          <CourseChart />
+          <AdvisorPerformance />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ExpiredLeadsTable />
+          <RecentContactsTable />
+        </div>
+      </main>
+    </div>
+  );
 }
