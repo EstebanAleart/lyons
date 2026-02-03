@@ -1,16 +1,21 @@
 // scripts/createTrackingTables.js
 // Crear tablas de tracking para métricas del sistema
 
+require('dotenv').config();
 const { sequelize } = require('../lib/db');
 
 async function createTrackingTables() {
   try {
     console.log('Creando tablas de tracking...');
 
+    // Habilitar extensión uuid-ossp si no existe
+    await sequelize.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
+    console.log('✓ Extensión uuid-ossp habilitada');
+
     // Tabla PageView
     await sequelize.query(`
       CREATE TABLE IF NOT EXISTS page_views (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         path VARCHAR(500) NOT NULL,
         user_agent TEXT,
         ip_hash VARCHAR(64),
@@ -28,7 +33,7 @@ async function createTrackingTables() {
     // Tabla ApiMetric
     await sequelize.query(`
       CREATE TABLE IF NOT EXISTS api_metrics (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         endpoint VARCHAR(500) NOT NULL,
         method VARCHAR(10),
         status_code INTEGER,
