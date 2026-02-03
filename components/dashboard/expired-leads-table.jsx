@@ -372,15 +372,6 @@ export function ExpiredLeadsTable() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                              onClick={() => handleEditLead(lead)}
-                              title="Editar"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                               onClick={() => handleViewDetail(lead.id)}
                               title="Ver detalle"
                             >
@@ -389,29 +380,11 @@ export function ExpiredLeadsTable() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                              className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
                               onClick={() => handleContactClick(lead)}
-                              title="Contactar por WhatsApp"
+                              title="Contactar"
                             >
                               <MessageCircle className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-purple-600 hover:text-purple-700 hover:bg-purple-500/10"
-                              onClick={() => handleContactClick(lead)}
-                              title="Llamar"
-                            >
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-500/10"
-                              onClick={() => handleContactClick(lead)}
-                              title="Enviar Email"
-                            >
-                              <Mail className="h-4 w-4" />
                             </Button>
                           </div>
                         </td>

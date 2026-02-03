@@ -23,9 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { Search, Download, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye } from "lucide-react";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
+import { LeadDetailDrawer } from "@/components/lead-detail-drawer";
 import {
   fetchAllClientesIncrementally,
   setFilter,
@@ -56,6 +57,10 @@ export default function ClientesPage() {
   // Estado para el modal de formulario (editar)
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
+  
+  // Estado para el drawer de detalle
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [selectedClienteId, setSelectedClienteId] = useState(null);
   
   // Selectores de Redux
   const filters = useSelector(state => state.clientes.filters);
@@ -118,6 +123,11 @@ export default function ClientesPage() {
     dispatch(resetClientes());
     hasFetched.current = false;
     dispatch(fetchAllClientesIncrementally());
+  };
+
+  const handleViewDetail = (clienteId) => {
+    setSelectedClienteId(clienteId);
+    setDetailDrawerOpen(true);
   };
 
   const handleExportCSV = () => {
@@ -352,10 +362,10 @@ export default function ClientesPage() {
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handleEditCliente(cliente)}
-                                  title="Editar"
+                                  onClick={() => handleViewDetail(cliente.leadId || cliente.id)}
+                                  title="Ver detalle"
                                 >
-                                  <Pencil className="h-4 w-4" />
+                                  <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
@@ -422,6 +432,17 @@ export default function ClientesPage() {
           onOpenChange={setFormModalOpen}
           lead={editingCliente}
           onSuccess={handleFormSuccess}
+        />
+
+        {/* Drawer de detalle */}
+        <LeadDetailDrawer
+          open={detailDrawerOpen}
+          onOpenChange={setDetailDrawerOpen}
+          leadId={selectedClienteId}
+          onContact={(lead) => {
+            setDetailDrawerOpen(false);
+            handleContactClick(lead);
+          }}
         />
       </main>
     </div>
