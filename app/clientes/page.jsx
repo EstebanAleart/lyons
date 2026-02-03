@@ -294,7 +294,66 @@ export default function ClientesPage() {
                   </div>
                 </div>
 
-                <div className="rounded-md border border-border/50 overflow-hidden">
+                {/* Mobile: Cards */}
+                <div className="md:hidden divide-y">
+                  {paginatedClientes.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No se encontraron clientes
+                    </div>
+                  ) : (
+                    paginatedClientes.map((cliente) => (
+                      <div
+                        key={cliente.id}
+                        className="p-4 hover:bg-muted/50 cursor-pointer active:bg-muted transition-colors"
+                        onClick={() => handleViewDetail(cliente.id)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500/10 flex-shrink-0">
+                              <UserCheck className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">
+                                {cliente.nombre}
+                              </p>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {cliente.email || cliente.telefono || 'Sin contacto'}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs ${estadoColors[cliente.estadoCliente] || estadoColors.activo}`}
+                                >
+                                  {cliente.estadoCliente || 'activo'}
+                                </Badge>
+                                {cliente.curso && (
+                                  <span className="text-xs text-muted-foreground truncate">
+                                    {cliente.curso}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="h-8 gap-1 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleContactClick(cliente);
+                            }}
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            Contactar
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Desktop: Table */}
+                <div className="hidden md:block rounded-md border border-border/50 overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">

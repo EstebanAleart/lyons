@@ -373,7 +373,7 @@ export default function LeadsPage() {
           </CardContent>
         </Card>
 
-        {/* Table */}
+        {/* Table - Desktop / Cards - Mobile */}
         <Card>
           <CardContent className="p-0">
             {isLoading && loadedCount === 0 ? (
@@ -383,30 +383,78 @@ export default function LeadsPage() {
                   <span className="text-muted-foreground">Cargando contactos...</span>
                 </div>
               </div>
+            ) : leads.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No se encontraron contactos con los filtros aplicados
+              </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Contacto</TableHead>
-                      <TableHead>Curso</TableHead>
-                      <TableHead>Canal</TableHead>
-                      <TableHead>Etapa</TableHead>
-                      <TableHead>Asesor</TableHead>
-                      <TableHead>Último Contacto</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {leads.length === 0 ? (
+              <>
+                {/* Mobile: Cards */}
+                <div className="md:hidden divide-y">
+                  {leads.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="p-4 hover:bg-muted/50 cursor-pointer active:bg-muted transition-colors"
+                      onClick={() => handleViewDetail(contact.id)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">
+                            {`${contact.nombre} ${contact.apellido}`.trim()}
+                          </p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {contact.email || contact.telefono || 'Sin contacto'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" className={`text-xs ${etapaColors[contact.etapa] || ''}`}>
+                              {contact.etapa}
+                            </Badge>
+                            {contact.curso && (
+                              <span className="text-xs text-muted-foreground truncate">
+                                {contact.curso}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="h-8 gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleContactClick(contact);
+                            }}
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            Contactar
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            {contact.ultimoContacto || 'Sin contacto'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop: Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                          No se encontraron contactos con los filtros aplicados
-                        </TableCell>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Contacto</TableHead>
+                        <TableHead>Curso</TableHead>
+                        <TableHead>Canal</TableHead>
+                        <TableHead>Etapa</TableHead>
+                        <TableHead>Asesor</TableHead>
+                        <TableHead>Último Contacto</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
-                    ) : (
-                      leads.map((contact) => (
+                    </TableHeader>
+                    <TableBody>
+                      {leads.map((contact) => (
                         <TableRow key={contact.id}>
                           <TableCell className="font-medium">{`${contact.nombre} ${contact.apellido}`.trim()}</TableCell>
                           <TableCell>
@@ -465,11 +513,11 @@ export default function LeadsPage() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

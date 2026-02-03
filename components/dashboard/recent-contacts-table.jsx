@@ -220,7 +220,7 @@ export function RecentContactsTable({ onLeadClick }) {
           <span>Pág. {pagination.page} de {totalPages || 1}</span>
         </div>
 
-        {/* Tabla */}
+        {/* Tabla/Cards */}
         {isLoading && loadedCount === 0 ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
@@ -233,53 +233,93 @@ export function RecentContactsTable({ onLeadClick }) {
             <p>No hay contactos que coincidan</p>
           </div>
         ) : (
-          <ScrollArea className="h-[320px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Fecha</TableHead>
-                  <TableHead>Lead</TableHead>
-                  <TableHead className="w-[60px]">Canal</TableHead>
-                  <TableHead>Nota</TableHead>
-                  <TableHead className="w-[80px]">Etapa</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <>
+            {/* Mobile: Cards */}
+            <ScrollArea className="h-[320px] md:hidden">
+              <div className="divide-y">
                 {paginatedContactos.map((contacto) => (
-                  <TableRow 
+                  <div
                     key={contacto.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="p-3 hover:bg-muted/50 cursor-pointer active:bg-muted transition-colors"
                     onClick={() => onLeadClick?.(contacto.leadId)}
                   >
-                    <TableCell className="text-xs text-muted-foreground">
-                      {formatFecha(contacto.fecha)}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm truncate max-w-[120px]">{contacto.nombre || 'Sin nombre'}</p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[120px]">
-                          {contacto.telefono || contacto.email || '-'}
-                        </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="flex-shrink-0">
+                          {canalIcons[contacto.canal] || <MessageCircle className="h-4 w-4" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {contacto.nombre || 'Sin nombre'}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {contacto.nota || 'Sin nota'}
+                          </p>
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {canalIcons[contacto.canal] || <MessageCircle className="h-4 w-4" />}
-                    </TableCell>
-                    <TableCell>
-                      <p className="text-xs text-muted-foreground truncate max-w-[150px]" title={contacto.nota}>
-                        {contacto.nota || '-'}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-xs ${etapaColors[contacto.etapa] || ''}`}>
-                        {contacto.etapa}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className="text-xs text-muted-foreground">
+                          {formatFecha(contacto.fecha)}
+                        </span>
+                        <Badge variant="outline" className={`text-xs ${etapaColors[contacto.etapa] || ''}`}>
+                          {contacto.etapa}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
+              </div>
+            </ScrollArea>
+
+            {/* Desktop: Table */}
+            <ScrollArea className="h-[320px] hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[80px]">Fecha</TableHead>
+                    <TableHead>Lead</TableHead>
+                    <TableHead className="w-[60px]">Canal</TableHead>
+                    <TableHead>Nota</TableHead>
+                    <TableHead className="w-[80px]">Etapa</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedContactos.map((contacto) => (
+                    <TableRow 
+                      key={contacto.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => onLeadClick?.(contacto.leadId)}
+                    >
+                      <TableCell className="text-xs text-muted-foreground">
+                        {formatFecha(contacto.fecha)}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-sm truncate max-w-[120px]">{contacto.nombre || 'Sin nombre'}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                            {contacto.telefono || contacto.email || '-'}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {canalIcons[contacto.canal] || <MessageCircle className="h-4 w-4" />}
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-xs text-muted-foreground truncate max-w-[150px]" title={contacto.nota}>
+                          {contacto.nota || '-'}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-xs ${etapaColors[contacto.etapa] || ''}`}>
+                          {contacto.etapa}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </>
         )}
 
         {/* Paginación */}

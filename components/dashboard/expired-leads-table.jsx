@@ -274,7 +274,69 @@ export function ExpiredLeadsTable() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile: Cards */}
+            <div className="md:hidden divide-y">
+              {paginatedLeads.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  No se encontraron leads vencidos
+                </div>
+              ) : (
+                paginatedLeads.map((lead) => (
+                  <div
+                    key={lead.id}
+                    className="p-3 hover:bg-muted/50 cursor-pointer active:bg-muted transition-colors"
+                    onClick={() => handleViewDetail(lead.id)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium truncate">
+                            {lead.nombre} {lead.apellido}
+                          </p>
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                              lead.diasSinContacto > 60
+                                ? 'bg-[#dc5a5a]/20 text-[#dc5a5a]'
+                                : lead.diasSinContacto > 40
+                                  ? 'bg-[#f7a90c]/20 text-[#f7a90c]'
+                                  : 'bg-yellow-500/20 text-yellow-600'
+                            }`}
+                          >
+                            {lead.diasSinContacto}d
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {lead.email || lead.telefono || 'Sin contacto'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${estadoColors[lead.estado] || ''}`}
+                          >
+                            {lead.estado}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-8 gap-1 flex-shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleContactClick(lead);
+                        }}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Contactar
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop: Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/50">
