@@ -66,6 +66,95 @@ NODE_ENV=development
 
 ---
 
+## Git Workflow
+
+### Ramas
+
+| Rama | Propósito |
+|------|-----------|
+| `main` | Producción estable |
+| `backSSR` | Desarrollo con SSR |
+| `feature/*` | Nuevas funcionalidades |
+| `fix/*` | Corrección de bugs |
+
+### Convención de Commits (Conventional Commits)
+
+Formato: `<tipo>: <descripción breve>`
+
+Para cambios más complejos:
+```
+<tipo>: <descripción breve>
+
+- Detalle 1
+- Detalle 2
+- Detalle 3
+```
+
+#### Tipos de Commit
+
+| Tipo | Uso | Ejemplo |
+|------|-----|---------|
+| `feat` | Nueva funcionalidad | `feat: agregar filtro por etapa en leads` |
+| `fix` | Corrección de bug | `fix: corregir cálculo de días vencidos` |
+| `perf` | Mejora de rendimiento | `perf: optimizar query de leads con SQL directo` |
+| `refactor` | Refactorización sin cambio funcional | `refactor: extraer lógica de filtros a hook` |
+| `style` | Cambios de estilo/formato | `style: ajustar espaciado en cards móviles` |
+| `docs` | Documentación | `docs: agregar guía de usuario` |
+| `chore` | Tareas de mantenimiento | `chore: actualizar dependencias` |
+| `test` | Tests | `test: agregar tests para API de leads` |
+| `build` | Cambios de build/deploy | `build: configurar variables de Vercel` |
+
+#### Ejemplos Reales del Proyecto
+
+```bash
+# Feature con detalles
+git commit -m "feat: implementar sistema de etapas del lead con optimistic updates
+
+- Agregar API endpoint para cambiar etapa del lead
+- Agregar selector de etapa inline en tabla de leads
+- Implementar optimistic updates para cambios instantáneos"
+
+# Performance
+git commit -m "perf: optimizar carga de leads con SQL directo y carga progresiva
+
+- Reemplazar Sequelize includes por SQL directo
+- Carga inicial de 100 leads para respuesta inmediata
+- Resto de leads carga en background"
+
+# Fix simple
+git commit -m "fix: agregar dependencia uuid"
+
+# Docs
+git commit -m "docs: actualizar README con estructura del proyecto"
+```
+
+### Flujo de Trabajo
+
+```bash
+# 1. Asegurarse de estar en la rama correcta
+git checkout backSSR
+git pull
+
+# 2. Hacer cambios y commit
+git add -A
+git commit -m "feat: descripción del cambio"
+
+# 3. Push
+git push
+
+# 4. El deploy a Vercel es automático
+```
+
+### Buenas Prácticas
+
+1. **Commits atómicos**: Un commit = un cambio lógico
+2. **Descripción clara**: Que se entienda sin ver el código
+3. **Presente imperativo**: "agregar" no "agregado" o "agrega"
+4. **Sin punto final**: `feat: agregar filtro` ✅ no `feat: agregar filtro.` ❌
+5. **Máximo 72 caracteres** en la primera línea
+
+---
+
 ## Estructura del Proyecto
 
 ```
