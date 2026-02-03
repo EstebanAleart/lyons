@@ -81,6 +81,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
+    console.log('POST /api/leads - Request body:', body);
     const { nombre, apellido, email, telefono, localidadId, origenId, cursoId } = body;
 
     if (!nombre || !nombre.trim()) {

@@ -20,3 +20,39 @@ export async function GET(request) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function POST(request) {
+  try {
+    const { nombre, descripcion = null } = await request.json();
+    
+    if (!nombre?.trim()) {
+      return Response.json({ error: 'El nombre es requerido' }, { status: 400 });
+    }
+
+    // Verificar si ya existe
+    const existente = await Curso.findOne({
+      where: { nombre: nombre.trim() }
+    });
+    
+    if (existente) {
+      return Response.json({ error: 'Ya existe un curso con ese nombre' }, { status: 409 });
+    }
+
+    const nuevoCurso = await Curso.create({
+      nombre: nombre.trim(),
+      descripcion,
+      activo: true
+    });
+
+    return Response.json({
+      id: nuevoCurso.id,
+      nombre: nuevoCurso.nombre,
+      descripcion: nuevoCurso.descripcion,
+      activo: nuevoCurso.activo,
+    });
+    
+  } catch (error) {
+    console.error('Error creando curso:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}

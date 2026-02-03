@@ -37,7 +37,6 @@ export function LeadFormModal({
     email: '',
     telefono: '',
     localidadId: 'null',
-    origenId: 'null',
     cursoId: 'null',
   })
   
@@ -46,8 +45,13 @@ export function LeadFormModal({
   
   // Opciones para los selects
   const [localidades, setLocalidades] = useState([])
-  const [origenes, setOrigenes] = useState([])
   const [cursos, setCursos] = useState([])
+  
+  // Estados para agregar nuevos items
+  const [newLocalidad, setNewLocalidad] = useState('')
+  const [newCurso, setNewCurso] = useState('')
+  const [isAddingLocalidad, setIsAddingLocalidad] = useState(false)
+  const [isAddingCurso, setIsAddingCurso] = useState(false)
 
   // Cargar opciones al abrir el modal
   useEffect(() => {
@@ -55,11 +59,9 @@ export function LeadFormModal({
       setIsLoading(true)
       Promise.all([
         fetch('/api/localidades').then(r => r.json()).catch(() => []),
-        fetch('/api/origenes').then(r => r.json()).catch(() => []),
         fetch('/api/cursos').then(r => r.json()).catch(() => []),
-      ]).then(([locs, origs, curs]) => {
+      ]).then(([locs, curs]) => {
         setLocalidades(locs)
-        setOrigenes(origs)
         setCursos(curs)
         setIsLoading(false)
       })
@@ -75,7 +77,6 @@ export function LeadFormModal({
         email: lead.email || '',
         telefono: lead.telefono || '',
         localidadId: lead.localidadId || 'null',
-        origenId: lead.origenId || 'null',
         cursoId: lead.cursoId || 'null',
       })
     } else if (open && !lead) {
@@ -86,7 +87,6 @@ export function LeadFormModal({
         email: '',
         telefono: '',
         localidadId: 'null',
-        origenId: 'null',
         cursoId: 'null',
       })
     }
@@ -94,6 +94,62 @@ export function LeadFormModal({
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Función para agregar nueva localidad
+  const handleAddLocalidad = async () => {
+    if (!newLocalidad.trim()) return
+    
+    setIsAddingLocalidad(true)
+    try {
+      const response = await fetch('/api/localidades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: newLocalidad.trim() })
+      })
+      
+      if (response.ok) {
+        const newLoc = await response.json()
+        setLocalidades(prev => [...prev, newLoc])
+        setFormData(prev => ({ ...prev, localidadId: newLoc.id }))
+        setNewLocalidad('')
+        toast.success('Localidad agregada', { description: newLoc.nombre })
+      } else {
+        toast.error('Error al agregar localidad')
+      }
+    } catch (error) {
+      toast.error('Error al agregar localidad')
+    } finally {
+      setIsAddingLocalidad(false)
+    }
+  }
+
+  // Función para agregar nuevo curso
+  const handleAddCurso = async () => {
+    if (!newCurso.trim()) return
+    
+    setIsAddingCurso(true)
+    try {
+      const response = await fetch('/api/cursos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: newCurso.trim() })
+      })
+      
+      if (response.ok) {
+        const newCrs = await response.json()
+        setCursos(prev => [...prev, newCrs])
+        setFormData(prev => ({ ...prev, cursoId: newCrs.id }))
+        setNewCurso('')
+        toast.success('Curso agregado', { description: newCrs.nombre })
+      } else {
+        toast.error('Error al agregar curso')
+      }
+    } catch (error) {
+      toast.error('Error al agregar curso')
+    } finally {
+      setIsAddingCurso(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -120,9 +176,11 @@ export function LeadFormModal({
       const submitData = {
         ...formData,
         localidadId: formData.localidadId === 'null' ? null : formData.localidadId,
-        origenId: formData.origenId === 'null' ? null : formData.origenId,
         cursoId: formData.cursoId === 'null' ? null : formData.cursoId,
       }
+      
+      console.log('Form submitData:', submitData);
+      console.log('URL:', url, 'Method:', method);
       
       const response = await fetch(url, {
         method,
@@ -132,7 +190,8 @@ export function LeadFormModal({
       
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Error al guardar')
+        console.error('API Error:', error);
+        throw new Error(error.error || error.message || 'Error al guardar')
       }
       
       const result = await response.json()
@@ -148,8 +207,10 @@ export function LeadFormModal({
       onOpenChange(false)
       
     } catch (error) {
-      console.error('Error:', error)
-      toast.error('Error', { description: error.message || 'No se pudo guardar el lead' })
+      console.error('Form Error:', error)
+      toast.error('Error', { 
+        description: error.message || 'No se pudo guardar el lead' 
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -241,45 +302,48 @@ export function LeadFormModal({
                 <MapPin className="h-4 w-4" />
                 Localidad
               </Label>
-              <Select 
-                value={formData.localidadId} 
-                onValueChange={(v) => handleChange('localidadId', v)}
-                disabled={isSubmitting || isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={isLoading ? "Cargando..." : "Seleccionar localidad"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Sin especificar</SelectItem>
-                  {localidades.map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      {loc.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Origen */}
-            <div className="space-y-2">
-              <Label>Origen</Label>
-              <Select 
-                value={formData.origenId} 
-                onValueChange={(v) => handleChange('origenId', v)}
-                disabled={isSubmitting || isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={isLoading ? "Cargando..." : "Seleccionar origen"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Sin especificar</SelectItem>
-                  {origenes.map((orig) => (
-                    <SelectItem key={orig.id} value={orig.id}>
-                      {orig.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Select 
+                  value={formData.localidadId} 
+                  onValueChange={(v) => handleChange('localidadId', v)}
+                  disabled={isSubmitting || isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={isLoading ? "Cargando..." : "Seleccionar localidad"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="null">Sin especificar</SelectItem>
+                    {localidades.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Agregar nueva localidad */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nueva localidad"
+                    value={newLocalidad}
+                    onChange={(e) => setNewLocalidad(e.target.value)}
+                    disabled={isSubmitting || isAddingLocalidad}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddLocalidad}
+                    disabled={!newLocalidad.trim() || isSubmitting || isAddingLocalidad}
+                  >
+                    {isAddingLocalidad ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      '+ Agregar'
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Curso de interés */}
@@ -288,23 +352,48 @@ export function LeadFormModal({
                 <BookOpen className="h-4 w-4" />
                 Curso de interés
               </Label>
-              <Select 
-                value={formData.cursoId} 
-                onValueChange={(v) => handleChange('cursoId', v)}
-                disabled={isSubmitting || isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={isLoading ? "Cargando..." : "Seleccionar curso"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="null">Sin especificar</SelectItem>
-                  {cursos.map((curso) => (
-                    <SelectItem key={curso.id} value={curso.id}>
-                      {curso.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Select 
+                  value={formData.cursoId} 
+                  onValueChange={(v) => handleChange('cursoId', v)}
+                  disabled={isSubmitting || isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={isLoading ? "Cargando..." : "Seleccionar curso"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="null">Sin especificar</SelectItem>
+                    {cursos.map((curso) => (
+                      <SelectItem key={curso.id} value={curso.id}>
+                        {curso.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Agregar nuevo curso */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nuevo curso"
+                    value={newCurso}
+                    onChange={(e) => setNewCurso(e.target.value)}
+                    disabled={isSubmitting || isAddingCurso}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddCurso}
+                    disabled={!newCurso.trim() || isSubmitting || isAddingCurso}
+                  >
+                    {isAddingCurso ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      '+ Agregar'
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
