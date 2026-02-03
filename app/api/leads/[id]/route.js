@@ -1,5 +1,5 @@
 // app/api/leads/[id]/route.js
-// API para obtener detalle completo de un lead
+// API para obtener detalle completo de un lead y actualizarlo
 
 import { Lead, Genero, Localidad, Origen, Cliente, Interaccion, Canal, Usuario, HistorialEstadoLead, EstadoLead, LeadCurso, Curso } from '@/lib/models';
 
@@ -112,6 +112,59 @@ export async function GET(request, { params }) {
     return Response.json(result);
   } catch (error) {
     console.error('Error al obtener lead:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// PUT - Actualizar lead
+export async function PUT(request, { params }) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { nombre, apellido, email, telefono, localidadId, origenId, cursoId } = body;
+
+    const lead = await Lead.findByPk(id);
+    
+    if (!lead) {
+      return Response.json({ error: 'Lead no encontrado' }, { status: 404 });
+    }
+
+    if (!nombre || !nombre.trim()) {
+      return Response.json({ error: 'El nombre es obligatorio' }, { status: 400 });
+    }
+
+    // Actualizar el lead
+    await lead.update({
+      nombre: nombre.trim(),
+      apellido: apellido?.trim() || null,
+      email: email?.trim() || null,
+      telefono: telefono?.trim() || null,
+      localidad_id: localidadId || null,
+      origen_id: origenId || null,
+      updated_at: new Date(),
+    });
+
+    // Si hay curso, actualizar o crear la relación
+    if (cursoId) {
+      const existingCurso = await LeadCurso.findOne({ where: { lead_id: id } });
+      if (existingCurso) {
+        await existingCurso.update({ curso_id: cursoId });
+      } else {
+        await LeadCurso.create({
+          lead_id: id,
+          curso_id: cursoId,
+          prioridad: 1,
+        });
+      }
+    }
+
+    return Response.json({ 
+      id: lead.id, 
+      message: 'Lead actualizado exitosamente' 
+    });
+    
+  } catch (error) {
+    console.error('Error al actualizar lead:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }

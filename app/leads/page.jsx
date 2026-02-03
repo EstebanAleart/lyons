@@ -24,14 +24,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Filter, Download, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Download, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil } from "lucide-react";
 import { ContactModal } from "@/components/contact-modal";
+import { LeadFormModal } from "@/components/lead-form-modal";
 import {
   fetchAllLeadsIncrementally,
   setFilter,
   clearFilters,
   setPage,
   setPerPage,
+  resetLeads,
   selectPaginatedLeads,
   selectUniqueFilterOptions,
   selectLoadingState,
@@ -53,6 +55,10 @@ export default function LeadsPage() {
   // Estado para el modal de contacto
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  
+  // Estado para el modal de formulario (crear/editar)
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
   
   const filters = useSelector((state) => state.leads.filters);
   const { leads, totalFiltered, totalPages, currentPage, perPage } = useSelector(selectPaginatedLeads);
@@ -89,6 +95,23 @@ export default function LeadsPage() {
 
   const handleContactComplete = (leadId, method, comment) => {
     console.log('Contacto registrado:', { leadId, method, comment });
+  };
+
+  const handleNewLead = () => {
+    setEditingLead(null);
+    setFormModalOpen(true);
+  };
+
+  const handleEditLead = (lead) => {
+    setEditingLead(lead);
+    setFormModalOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    // Refrescar los leads
+    dispatch(resetLeads());
+    hasFetched.current = false;
+    dispatch(fetchAllLeadsIncrementally());
   };
 
   const handleExportCSV = () => {
@@ -134,10 +157,16 @@ export default function LeadsPage() {
               )}
             </div>
           </div>
-          <Button onClick={handleExportCSV} variant="outline" className="gap-2 bg-transparent">
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleNewLead} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Lead
+            </Button>
+            <Button onClick={handleExportCSV} variant="outline" className="gap-2 bg-transparent">
+              <Download className="h-4 w-4" />
+              Exportar CSV
+            </Button>
+          </div>
         </div>
 
         {/* Loading Progress */}
@@ -331,15 +360,26 @@ export default function LeadsPage() {
                           <TableCell>{contact.asesor}</TableCell>
                           <TableCell>{contact.ultimoContacto}</TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                              onClick={() => handleContactClick(contact)}
-                              title="Contactar"
-                            >
-                              <MessageCircle className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                onClick={() => handleEditLead(contact)}
+                                title="Editar"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={() => handleContactClick(contact)}
+                                title="Contactar"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -426,6 +466,14 @@ export default function LeadsPage() {
           onOpenChange={setContactModalOpen}
           lead={selectedLead}
           onContactComplete={handleContactComplete}
+        />
+
+        {/* Modal de formulario (crear/editar) */}
+        <LeadFormModal
+          open={formModalOpen}
+          onOpenChange={setFormModalOpen}
+          lead={editingLead}
+          onSuccess={handleFormSuccess}
         />
       </main>
     </div>

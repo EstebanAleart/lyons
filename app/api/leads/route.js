@@ -76,3 +76,55 @@ export async function GET(request) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
+
+// POST - Crear nuevo lead
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { nombre, apellido, email, telefono, localidadId, origenId, cursoId } = body;
+
+    if (!nombre || !nombre.trim()) {
+      return Response.json({ error: 'El nombre es obligatorio' }, { status: 400 });
+    }
+
+    // Crear el lead
+    const lead = await Lead.create({
+      nombre: nombre.trim(),
+      apellido: apellido?.trim() || null,
+      email: email?.trim() || null,
+      telefono: telefono?.trim() || null,
+      localidad_id: localidadId || null,
+      origen_id: origenId || null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    // Si hay curso, crear la relación
+    if (cursoId) {
+      await LeadCurso.create({
+        lead_id: lead.id,
+        curso_id: cursoId,
+        prioridad: 1,
+      });
+    }
+
+    // Crear historial de estado inicial
+    const estadoNuevo = await EstadoLead.findOne({ where: { nombre: 'nuevo' } });
+    if (estadoNuevo) {
+      await HistorialEstadoLead.create({
+        lead_id: lead.id,
+        estado_id: estadoNuevo.id,
+        created_at: new Date(),
+      });
+    }
+
+    return Response.json({ 
+      id: lead.id, 
+      message: 'Lead creado exitosamente' 
+    }, { status: 201 });
+    
+  } catch (error) {
+    console.error('Error al crear lead:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}

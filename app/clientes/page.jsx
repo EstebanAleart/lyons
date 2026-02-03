@@ -23,14 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Download, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { ContactModal } from "@/components/contact-modal";
+import { LeadFormModal } from "@/components/lead-form-modal";
 import {
   fetchAllClientesIncrementally,
   setFilter,
   clearFilters,
   setPage,
   setPerPage,
+  resetClientes,
   selectFilteredClientes,
   selectPaginatedClientes,
   selectUniqueFilterOptions,
@@ -50,6 +52,10 @@ export default function ClientesPage() {
   // Estado para el modal de contacto
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedCliente, setSelectedCliente] = useState(null);
+  
+  // Estado para el modal de formulario (editar)
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [editingCliente, setEditingCliente] = useState(null);
   
   // Selectores de Redux
   const filters = useSelector(state => state.clientes.filters);
@@ -100,6 +106,18 @@ export default function ClientesPage() {
 
   const handleContactComplete = (clienteId, method, comment) => {
     console.log('Contacto registrado:', { clienteId, method, comment });
+  };
+
+  const handleEditCliente = (cliente) => {
+    setEditingCliente(cliente);
+    setFormModalOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    // Refrescar clientes
+    dispatch(resetClientes());
+    hasFetched.current = false;
+    dispatch(fetchAllClientesIncrementally());
   };
 
   const handleExportCSV = () => {
@@ -329,15 +347,26 @@ export default function ClientesPage() {
                               </span>
                             </TableCell>
                             <TableCell>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                                onClick={() => handleContactClick(cliente)}
-                                title="Contactar"
-                              >
-                                <MessageCircle className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleEditCliente(cliente)}
+                                  title="Editar"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                  onClick={() => handleContactClick(cliente)}
+                                  title="Contactar"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
@@ -385,6 +414,14 @@ export default function ClientesPage() {
           onOpenChange={setContactModalOpen}
           lead={selectedCliente}
           onContactComplete={handleContactComplete}
+        />
+
+        {/* Modal de formulario (editar) */}
+        <LeadFormModal
+          open={formModalOpen}
+          onOpenChange={setFormModalOpen}
+          lead={editingCliente}
+          onSuccess={handleFormSuccess}
         />
       </main>
     </div>

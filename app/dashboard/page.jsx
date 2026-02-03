@@ -7,7 +7,6 @@ import { ChannelChart } from "@/components/dashboard/channel-chart";
 import { CourseChart } from "@/components/dashboard/course-chart";
 import { ExpiredLeadsTable } from "@/components/dashboard/expired-leads-table";
 import { AdvisorPerformance } from "@/components/dashboard/advisor-performance";
-import { SystemHealth } from "@/components/dashboard/system-health";
 
 export default function DashboardPage() {
   return (
@@ -29,9 +28,6 @@ export default function DashboardPage() {
         </div>
 
         <ExpiredLeadsTable />
-        
-        {/* Métricas de sistema - separadas de métricas de negocio */}
-        <SystemHealth />
       </main>
     </div>
   );

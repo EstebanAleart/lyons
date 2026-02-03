@@ -14,19 +14,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Phone, Mail, AlertCircle, Download, Search, ChevronLeft, ChevronRight, X, MessageCircle, Eye } from 'lucide-react'
+import { Phone, Mail, AlertCircle, Download, Search, ChevronLeft, ChevronRight, X, MessageCircle, Eye, Pencil } from 'lucide-react'
 import {
   fetchAllLeadsVencidosIncrementally,
   setFilter,
   clearFilters,
   setPage,
   setPerPage,
+  resetLeadsVencidos,
   selectFilteredLeadsVencidos,
   selectPaginatedLeadsVencidos,
   selectUniqueFilterOptions,
   selectLoadingState,
 } from '@/lib/store/leadsVencidosSlice'
 import { ContactModal } from '@/components/contact-modal'
+import { LeadFormModal } from '@/components/lead-form-modal'
 import { LeadDetailDrawer } from '@/components/lead-detail-drawer'
 
 // Colores corporativos para estados
@@ -48,6 +50,10 @@ export function ExpiredLeadsTable() {
   // Estado para el drawer de detalle
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
   const [selectedLeadId, setSelectedLeadId] = useState(null)
+  
+  // Estado para el modal de formulario (editar)
+  const [formModalOpen, setFormModalOpen] = useState(false)
+  const [editingLead, setEditingLead] = useState(null)
 
   // Selectores Redux
   const filters = useSelector(state => state.leadsVencidos.filters)
@@ -108,6 +114,18 @@ export function ExpiredLeadsTable() {
     setDetailDrawerOpen(false)
     setSelectedLead(lead)
     setContactModalOpen(true)
+  }
+
+  const handleEditLead = (lead) => {
+    setEditingLead(lead)
+    setFormModalOpen(true)
+  }
+
+  const handleFormSuccess = () => {
+    // Refrescar los leads vencidos
+    dispatch(resetLeadsVencidos())
+    hasFetched.current = false
+    dispatch(fetchAllLeadsVencidosIncrementally())
   }
 
   const handleExportCSV = () => {
@@ -354,6 +372,15 @@ export function ExpiredLeadsTable() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                              onClick={() => handleEditLead(lead)}
+                              title="Editar"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                               onClick={() => handleViewDetail(lead.id)}
                               title="Ver detalle"
                             >
@@ -433,6 +460,14 @@ export function ExpiredLeadsTable() {
         onOpenChange={setContactModalOpen}
         lead={selectedLead}
         onContactComplete={handleContactComplete}
+      />
+      
+      {/* Modal de formulario (editar) */}
+      <LeadFormModal
+        open={formModalOpen}
+        onOpenChange={setFormModalOpen}
+        lead={editingLead}
+        onSuccess={handleFormSuccess}
       />
       
       {/* Drawer de detalle del lead */}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, UserCheck, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, UserCheck, LogOut, Activity } from "lucide-react";
 
 const navItems = [
   {
@@ -69,12 +69,30 @@ export function Navbar() {
         </nav>
 
         {/* User Actions */}
-        <Link href="/">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <LogOut className="h-5 w-5" />
-            <span className="sr-only">Cerrar sesión</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          {/* Link discreto a System Health - solo icono */}
+          <Link href="/system">
+            <Button 
+              variant={pathname === "/system" ? "default" : "ghost"} 
+              size="icon" 
+              className={cn(
+                pathname === "/system" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Salud del Sistema"
+            >
+              <Activity className="h-4 w-4" />
+              <span className="sr-only">Sistema</span>
+            </Button>
+          </Link>
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+              <LogOut className="h-5 w-5" />
+              <span className="sr-only">Cerrar sesión</span>
+            </Button>
+          </Link>
+        </div>
       </div>
     </header>
   );
