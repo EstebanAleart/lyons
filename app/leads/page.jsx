@@ -46,6 +46,7 @@ import {
   setPage,
   setPerPage,
   resetLeads,
+  markLeadAsClient,
   selectPaginatedLeads,
   selectUniqueFilterOptions,
   selectLoadingState,
@@ -566,6 +567,9 @@ export default function LeadsPage() {
           onContact={(lead) => {
             setDetailDrawerOpen(false);
             handleContactClick(lead);
+          }}
+          onConvertSuccess={(leadId) => {
+            dispatch(markLeadAsClient(leadId));
           }}
         />
 

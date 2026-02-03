@@ -108,11 +108,14 @@ export function LeadDetailDrawer({
       // Actualizar el lead local para mostrar que es cliente
       setLead(prev => ({
         ...prev,
+        esCliente: true,
+        etapaActual: 'convertido',
         stats: { ...prev.stats, esCliente: true }
       }))
       
+      // Actualizar Redux con el leadId
       if (onConvertSuccess) {
-        onConvertSuccess(data.clienteId)
+        onConvertSuccess(lead.id)
       }
       
     } catch (error) {
@@ -366,16 +369,17 @@ export function LeadDetailDrawer({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Convertir a Cliente</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro de que deseas convertir a 
-              <span className="font-semibold"> {lead?.nombre} {lead?.apellido}</span> en cliente?
-              <br /><br />
-              Esta acción:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Creará un nuevo registro de cliente</li>
-                <li>Cambiará el estado del lead a "convertido"</li>
-                <li>Mantendrá todo el historial del lead</li>
-              </ul>
+            <AlertDialogDescription asChild>
+              <div>
+                ¿Estás seguro de que deseas convertir a 
+                <span className="font-semibold"> {lead?.nombre} {lead?.apellido}</span> en cliente?
+                <p className="mt-2">Esta acción:</p>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>Creará un nuevo registro de cliente</li>
+                  <li>Cambiará el estado del lead a "convertido"</li>
+                  <li>Mantendrá todo el historial del lead</li>
+                </ul>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

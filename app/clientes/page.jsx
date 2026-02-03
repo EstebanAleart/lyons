@@ -26,7 +26,7 @@ import {
 import { Search, Download, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye } from "lucide-react";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
-import { LeadDetailDrawer } from "@/components/lead-detail-drawer";
+import { ClienteDetailDrawer } from "@/components/cliente-detail-drawer";
 import {
   fetchAllClientesIncrementally,
   setFilter,
@@ -34,6 +34,8 @@ import {
   setPage,
   setPerPage,
   resetClientes,
+  updateClienteStatus,
+  removeCliente,
   selectFilteredClientes,
   selectPaginatedClientes,
   selectUniqueFilterOptions,
@@ -43,6 +45,7 @@ import {
 const estadoColors = {
   activo: "bg-green-500/20 text-green-600 border-green-500/30",
   inactivo: "bg-gray-500/20 text-gray-600 border-gray-500/30",
+  egresado: "bg-blue-500/20 text-blue-600 border-blue-500/30",
   suspendido: "bg-red-500/20 text-red-600 border-red-500/30",
 };
 
@@ -371,7 +374,7 @@ export default function ClientesPage() {
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handleViewDetail(cliente.leadId || cliente.id)}
+                                  onClick={() => handleViewDetail(cliente.id)}
                                   title="Ver detalle"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -444,13 +447,19 @@ export default function ClientesPage() {
         />
 
         {/* Drawer de detalle */}
-        <LeadDetailDrawer
+        <ClienteDetailDrawer
           open={detailDrawerOpen}
           onOpenChange={setDetailDrawerOpen}
-          leadId={selectedClienteId}
-          onContact={(lead) => {
+          clienteId={selectedClienteId}
+          onContact={(cliente) => {
             setDetailDrawerOpen(false);
-            handleContactClick(lead);
+            handleContactClick(cliente);
+          }}
+          onStatusChange={(clienteId, estadoCliente) => {
+            dispatch(updateClienteStatus({ clienteId, estadoCliente }));
+          }}
+          onDelete={(clienteId) => {
+            dispatch(removeCliente(clienteId));
           }}
         />
       </main>
