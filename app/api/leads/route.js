@@ -1,5 +1,4 @@
 // app/api/leads/route.js
-// API Route para obtener leads desde la DB con paginación
 import { Lead, Genero, Localidad, Origen, HistorialEstadoLead, EstadoLead, LeadCurso, Curso, Interaccion, Usuario, Canal } from '@/lib/models';
 import { sequelize } from '@/lib/models';
 
@@ -9,20 +8,20 @@ export async function GET(request) {
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const limit = parseInt(searchParams.get('limit') || '500', 10);
 
-    // Obtener total de leads (query simple y rápida)
     const countResult = await sequelize.query(
       'SELECT COUNT(*) as total FROM leads',
       { type: sequelize.QueryTypes.SELECT }
     );
     const total = parseInt(countResult[0]?.total || 0);
 
-    // Query SQL directa - MUCHO más rápida que Sequelize con includes
+    // Query optimizada - combinamos las 3 subqueries de interacciones en 1
     const leads = await sequelize.query(`
       SELECT 
         l.id, l.nombre, l.apellido, l.email, l.telefono, l.localidad_id,
         l.created_at,
         loc.nombre AS localidad_nombre,
         g.descripcion AS genero,
+        o.nombre AS origen_nombre,
         (SELECT el.nombre FROM historial_estado_lead h 
          JOIN estados_lead el ON h.estado_id = el.id 
          WHERE h.lead_id = l.id ORDER BY h.created_at DESC LIMIT 1) AS etapa,
@@ -32,19 +31,25 @@ export async function GET(request) {
         (SELECT c.id FROM lead_cursos lc 
          JOIN cursos c ON c.id = lc.curso_id 
          WHERE lc.lead_id = l.id ORDER BY lc.prioridad ASC LIMIT 1) AS curso_id,
-        (SELECT cn.nombre FROM interacciones i 
-         JOIN canales cn ON cn.id = i.canal_id 
-         WHERE i.lead_id = l.id ORDER BY i.created_at DESC LIMIT 1) AS canal,
-        (SELECT u.nombre FROM interacciones i 
-         JOIN usuarios u ON u.id = i.usuario_id 
-         WHERE i.lead_id = l.id ORDER BY i.created_at DESC LIMIT 1) AS asesor,
-        (SELECT i.created_at FROM interacciones i 
-         WHERE i.lead_id = l.id ORDER BY i.created_at DESC LIMIT 1) AS ultimo_contacto,
-        o.nombre AS origen_nombre
+        ultima_i.canal_nombre AS canal,
+        ultima_i.usuario_nombre AS asesor,
+        ultima_i.created_at AS ultimo_contacto
       FROM leads l
       LEFT JOIN localidades loc ON loc.id = l.localidad_id
       LEFT JOIN generos g ON g.id = l.genero_id
       LEFT JOIN origenes o ON o.id = l.origen_id
+      LEFT JOIN LATERAL (
+        SELECT 
+          cn.nombre AS canal_nombre,
+          u.nombre AS usuario_nombre,
+          i.created_at
+        FROM interacciones i
+        LEFT JOIN canales cn ON cn.id = i.canal_id
+        LEFT JOIN usuarios u ON u.id = i.usuario_id
+        WHERE i.lead_id = l.id
+        ORDER BY i.created_at DESC
+        LIMIT 1
+      ) ultima_i ON true
       ORDER BY l.created_at DESC, l.id ASC
       LIMIT :limit OFFSET :offset
     `, {
@@ -52,7 +57,6 @@ export async function GET(request) {
       type: sequelize.QueryTypes.SELECT
     });
 
-    // Formatear datos para el frontend
     const leadsFormateados = leads.map(l => ({
       id: l.id,
       nombre: l.nombre || '',
@@ -88,7 +92,7 @@ export async function GET(request) {
   }
 }
 
-// POST - Crear nuevo lead
+// POST sin cambios
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -99,7 +103,6 @@ export async function POST(request) {
       return Response.json({ error: 'El nombre es obligatorio' }, { status: 400 });
     }
 
-    // Crear el lead
     const lead = await Lead.create({
       nombre: nombre.trim(),
       apellido: apellido?.trim() || null,
@@ -111,7 +114,6 @@ export async function POST(request) {
       updated_at: new Date(),
     });
 
-    // Si hay curso, crear la relación
     if (cursoId) {
       await LeadCurso.create({
         lead_id: lead.id,
@@ -120,7 +122,6 @@ export async function POST(request) {
       });
     }
 
-    // Crear historial de estado inicial
     const estadoNuevo = await EstadoLead.findOne({ where: { nombre: 'nuevo' } });
     if (estadoNuevo) {
       await HistorialEstadoLead.create({
