@@ -1,9 +1,8 @@
-import { Navbar } from "@/components/dashboard/navbar";
+import { AppLayout } from "@/components/dashboard/app-layout";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <AppLayout>
       <main className="container mx-auto p-4 md:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -12,7 +11,7 @@ export default function Loading() {
           </div>
           <div className="h-10 w-32 bg-muted rounded animate-pulse"></div>
         </div>
-        
+
         <div className="border rounded-lg p-4 space-y-4">
           <div className="flex gap-4">
             <div className="h-10 flex-1 bg-muted rounded animate-pulse"></div>
@@ -39,6 +38,6 @@ export default function Loading() {
           ))}
         </div>
       </main>
-    </div>
+    </AppLayout>
   );
 }
