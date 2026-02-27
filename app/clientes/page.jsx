@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Navbar } from "@/components/dashboard/navbar";
+import { AppLayout } from "@/components/dashboard/app-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -163,8 +163,7 @@ export default function ClientesPage() {
   const loadProgress = total > 0 ? (loadedCount / total) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <AppLayout>
       <main className="container mx-auto p-4 md:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -521,6 +520,6 @@ export default function ClientesPage() {
           }}
         />
       </main>
-    </div>
+    </AppLayout>
   );
 }

@@ -1,10 +1,9 @@
-import { Navbar } from "@/components/dashboard/navbar";
+import { AppLayout } from "@/components/dashboard/app-layout";
 import { DashboardLoading } from "@/components/dashboard/loading-skeletons";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <AppLayout>
       <main className="p-4 md:p-6">
         <div className="mb-6">
           <div className="h-8 w-48 bg-muted rounded animate-pulse mb-2"></div>
@@ -12,6 +11,6 @@ export default function Loading() {
         </div>
         <DashboardLoading />
       </main>
-    </div>
+    </AppLayout>
   );
 }

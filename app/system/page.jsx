@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Navbar } from "@/components/dashboard/navbar";
+import { AppLayout } from "@/components/dashboard/app-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -190,8 +190,7 @@ export default function SystemHealthPage() {
 
   if (loading && !stats) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <AppLayout>
         <main className="p-4 md:p-6 space-y-6">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-4 gap-4">
@@ -201,13 +200,12 @@ export default function SystemHealthPage() {
             <Skeleton className="h-32" />
           </div>
         </main>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <AppLayout>
       <main className="p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -705,6 +703,6 @@ export default function SystemHealthPage() {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </AppLayout>
   );
 }

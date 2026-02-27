@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Navbar } from "@/components/dashboard/navbar";
+import { AppLayout } from "@/components/dashboard/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -244,8 +244,7 @@ export default function LeadsPage() {
   const activeFiltersCount = Object.values(filters).filter((f) => f !== "Todos" && f !== "").length;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <AppLayout>
       <main className="p-4 md:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -791,6 +790,6 @@ export default function LeadsPage() {
           </AlertDialogContent>
         </AlertDialog>
       </main>
-    </div>
+    </AppLayout>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Navbar } from "@/components/dashboard/navbar";
+import { AppLayout } from "@/components/dashboard/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,8 +28,7 @@ import {
 
 export default function GuiaPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <AppLayout>
       <main className="p-4 md:p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -571,6 +570,6 @@ export default function GuiaPage() {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </AppLayout>
   );
 }
