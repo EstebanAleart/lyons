@@ -69,7 +69,7 @@ export function LeadDetailDrawer({
   onEtapaChange
 }) {
   const [lead, setLead] = useState(null)
-  const [country, setCountry] = useState('AR')
+  const [country, setCountry] = useState('UY')
   const [telefono, setTelefono] = useState('')
   // Detectar país/teléfono cuando se carga el lead
   useEffect(() => {
@@ -79,7 +79,7 @@ export function LeadDetailDrawer({
         setCountry(detected.code)
         setTelefono(lead.telefono.replace(detected.dial, ''))
       } else {
-        setCountry('AR')
+        setCountry('UY')
         setTelefono(lead.telefono)
       }
     }
@@ -240,37 +240,39 @@ export function LeadDetailDrawer({
               <span>Detalle del Lead</span>
             )}
           </SheetTitle>
-          <SheetDescription>
-            {lead?.stats?.esCliente ? (
-              <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
-                <UserCheck className="h-3 w-3 mr-1" />
-                Cliente
-              </Badge>
-            ) : loading ? (
-              <Skeleton className="h-6 w-24" />
-            ) : lead ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Etapa:</span>
-                <Select 
-                  value={lead.stats?.estadoActual || 'nuevo'} 
-                  onValueChange={handleEtapaChange}
-                >
-                  <SelectTrigger className="w-[140px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ETAPAS_CONFIG).map(([key, config]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0].replace('/20', '')}`} />
-                          {config.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
+          <SheetDescription asChild>
+            <div>
+              {lead?.stats?.esCliente ? (
+                <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
+                  <UserCheck className="h-3 w-3 mr-1" />
+                  Cliente
+                </Badge>
+              ) : loading ? (
+                <Skeleton className="h-6 w-24" />
+              ) : lead ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Etapa:</span>
+                  <Select
+                    value={lead.stats?.estadoActual || 'nuevo'}
+                    onValueChange={handleEtapaChange}
+                  >
+                    <SelectTrigger className="w-[140px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(ETAPAS_CONFIG).map(([key, config]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${config.color.split(' ')[0].replace('/20', '')}`} />
+                            {config.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+            </div>
           </SheetDescription>
         </SheetHeader>
 

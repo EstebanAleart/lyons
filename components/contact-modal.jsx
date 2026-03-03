@@ -90,7 +90,7 @@ export function ContactModal({
   onContactComplete 
 }) {
   // Estado para país y teléfono
-  const [country, setCountry] = useState('AR')
+  const [country, setCountry] = useState('UY')
   const [telefono, setTelefono] = useState('')
   const [method, setMethod] = useState('whatsapp')
   const [comment, setComment] = useState('')
@@ -126,7 +126,7 @@ export function ContactModal({
         // Quitar prefijo para mostrar solo el número local
         setTelefono(tel.replace(detected.dial, ''))
       } else {
-        setCountry('AR')
+        setCountry('UY')
         setTelefono(tel)
       }
     }

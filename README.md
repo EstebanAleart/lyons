@@ -174,3 +174,4 @@ npm run dev | build | start | lint
 | Datos no cargan | Consola del navegador + logs del servidor |
 | Usuario sin acceso | Verificar `rol=asesor` y `activo=true` en tabla `usuarios` |
 | Build falla | Verificar variables de entorno en Vercel |
+| Hydration error (sidebar) | Corregido — `Math.random` en `SidebarMenuSkeleton` movido a `useEffect` |
