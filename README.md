@@ -27,8 +27,8 @@ npm run dev
 **.env.local:**
 ```env
 DB_HOST=  DB_NAME=  DB_USER=  DB_PASS=  DB_PORT=5432
-AUTH0_SECRET=  AUTH0_BASE_URL=  AUTH0_ISSUER_BASE_URL=
-AUTH0_CLIENT_ID=  AUTH0_CLIENT_SECRET=
+AUTH_SECRET=
+AUTH0_CLIENT_ID=  AUTH0_CLIENT_SECRET=  AUTH0_ISSUER=
 NEXTAUTH_SECRET=  NEXTAUTH_URL=
 NODE_ENV=development
 ```
@@ -56,7 +56,8 @@ components/
 │   ├── app-sidebar.jsx     # Navegación lateral
 │   ├── app-layout.jsx      # Wrapper: SidebarProvider + AppSidebar + SidebarInset
 │   ├── dashboard-header|kpi-cards|funnel-chart|activity-chart.jsx
-│   ├── channel-chart|course-chart|advisor-performance.jsx
+│   ├── channel-chart|course-chart.jsx
+│   ├── advisor-performance.jsx  # sin uso (pendiente asignación de asesores)
 │   ├── expired-leads-table|recent-contacts-table|loading-skeletons.jsx
 │   └── system-health.jsx
 ├── ui/                     # shadcn/ui components
@@ -174,3 +175,5 @@ npm run dev | build | start | lint
 | Datos no cargan | Consola del navegador + logs del servidor |
 | Usuario sin acceso | Verificar `rol=asesor` y `activo=true` en tabla `usuarios` |
 | Build falla | Verificar variables de entorno en Vercel |
+| Hydration error (sidebar) | Corregido — `Math.random` en `SidebarMenuSkeleton` movido a `useEffect` |
+| Hydration error (`<p>` con `<div>`) | Corregido — `SheetDescription asChild` en `lead-detail-drawer.jsx` |

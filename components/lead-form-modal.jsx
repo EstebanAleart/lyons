@@ -42,7 +42,7 @@ export function LeadFormModal({
     cursoId: 'null',
   })
   // Estado para país de teléfono
-  const [country, setCountry] = useState('AR')
+  const [country, setCountry] = useState('UY')
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -90,7 +90,7 @@ export function LeadFormModal({
           cursoId: lead.cursoId || 'null',
         })
       } else {
-        setCountry('AR')
+        setCountry('UY')
         setFormData({
           nombre: lead.nombre || '',
           apellido: lead.apellido || '',
@@ -102,7 +102,7 @@ export function LeadFormModal({
       }
     } else if (open && !lead) {
       // Reset form para crear nuevo
-      setCountry('AR')
+      setCountry('UY')
       setFormData({
         nombre: '',
         apellido: '',
