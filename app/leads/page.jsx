@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Filter, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye, Trash2 } from "lucide-react";
+import { Search, Filter, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
@@ -78,6 +78,10 @@ export default function LeadsPage() {
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState(null);
   
+  // Estado para filas expandidas
+  const [expandedRow, setExpandedRow] = useState(null);
+  const toggleRow = (id) => setExpandedRow(prev => prev === id ? null : id);
+
   // Estado para eliminar
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState(null);
@@ -506,6 +510,7 @@ export default function LeadsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-8"></TableHead>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Contacto</TableHead>
                         <TableHead>Curso</TableHead>
@@ -518,117 +523,192 @@ export default function LeadsPage() {
                     </TableHeader>
                     <TableBody>
                       {leads.map((contact) => (
-                        <TableRow key={contact.id}>
-                          <TableCell className="font-medium">{`${contact.nombre} ${contact.apellido}`.trim()}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-sm">{contact.email || '-'}</span>
-                              <span className="text-xs text-muted-foreground">{contact.telefono || '-'}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{contact.curso}</TableCell>
-                          <TableCell>{contact.canal}</TableCell>
-                          <TableCell>
-                            <Select 
-                              value={contact.etapaActual || contact.etapa || 'nuevo'} 
-                              onValueChange={(value) => handleEtapaChangeInline(contact.id, value, `${contact.nombre} ${contact.apellido}`.trim())}
-                            >
-                              <SelectTrigger className="w-[120px] h-8 text-xs">
-                                <div className={`flex items-center gap-1.5 ${etapaColors[contact.etapaActual || contact.etapa] ? 'px-1.5 py-0.5 rounded' : ''}`}>
-                                  <div className={`w-2 h-2 rounded-full ${
-                                    (contact.etapaActual || contact.etapa) === 'nuevo' ? 'bg-blue-500' :
-                                    (contact.etapaActual || contact.etapa) === 'contactado' ? 'bg-yellow-500' :
-                                    (contact.etapaActual || contact.etapa) === 'interesado' ? 'bg-purple-500' :
-                                    (contact.etapaActual || contact.etapa) === 'negociando' ? 'bg-orange-500' :
-                                    (contact.etapaActual || contact.etapa) === 'convertido' ? 'bg-green-500' :
-                                    (contact.etapaActual || contact.etapa) === 'perdido' ? 'bg-red-500' : 'bg-gray-400'
-                                  }`} />
-                                  <SelectValue />
+                        <>
+                          <TableRow
+                            key={contact.id}
+                            className={`cursor-pointer ${expandedRow === contact.id ? 'bg-muted/20' : ''}`}
+                            onClick={() => toggleRow(contact.id)}
+                          >
+                            <TableCell className="pl-3 pr-0">
+                              {expandedRow === contact.id
+                                ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                            </TableCell>
+                            <TableCell className="font-medium">{`${contact.nombre} ${contact.apellido}`.trim()}</TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-sm">{contact.email || '-'}</span>
+                                <span className="text-xs text-muted-foreground">{contact.telefono || '-'}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{contact.curso}</TableCell>
+                            <TableCell>{contact.canal}</TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={contact.etapaActual || contact.etapa || 'nuevo'}
+                                onValueChange={(value) => handleEtapaChangeInline(contact.id, value, `${contact.nombre} ${contact.apellido}`.trim())}
+                              >
+                                <SelectTrigger className="w-[120px] h-8 text-xs">
+                                  <div className={`flex items-center gap-1.5 ${etapaColors[contact.etapaActual || contact.etapa] ? 'px-1.5 py-0.5 rounded' : ''}`}>
+                                    <div className={`w-2 h-2 rounded-full ${
+                                      (contact.etapaActual || contact.etapa) === 'nuevo' ? 'bg-blue-500' :
+                                      (contact.etapaActual || contact.etapa) === 'contactado' ? 'bg-yellow-500' :
+                                      (contact.etapaActual || contact.etapa) === 'interesado' ? 'bg-purple-500' :
+                                      (contact.etapaActual || contact.etapa) === 'negociando' ? 'bg-orange-500' :
+                                      (contact.etapaActual || contact.etapa) === 'convertido' ? 'bg-green-500' :
+                                      (contact.etapaActual || contact.etapa) === 'perdido' ? 'bg-red-500' : 'bg-gray-400'
+                                    }`} />
+                                    <SelectValue />
+                                  </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="nuevo">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                      Nuevo
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="contactado">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                                      Contactado
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="interesado">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-purple-500" />
+                                      Interesado
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="negociando">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-orange-500" />
+                                      Negociando
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="convertido">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                                      Convertido
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="perdido">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                                      Perdido
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>{contact.asesor}</TableCell>
+                            <TableCell>{contact.ultimoContacto}</TableCell>
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleEditLead(contact)}
+                                  title="Editar"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleViewDetail(contact.id)}
+                                  title="Ver detalle"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                  onClick={() => handleContactClick(contact)}
+                                  title="Contactar"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleDeleteClick(contact)}
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* Fila expandida con todos los datos del lead */}
+                          {expandedRow === contact.id && (
+                            <TableRow key={`${contact.id}-expanded`} className="bg-muted/10 hover:bg-muted/10">
+                              <TableCell colSpan={9} className="py-4 px-6">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-3 text-sm">
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Sistema</p>
+                                    <p className="font-mono text-xs text-foreground truncate">{contact.id}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Nombre</p>
+                                    <p className="text-foreground">{contact.nombre || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Apellido</p>
+                                    <p className="text-foreground">{contact.apellido || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Género</p>
+                                    <p className="text-foreground">{contact.genero || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Email</p>
+                                    <p className="text-foreground">{contact.email || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Teléfono</p>
+                                    <p className="text-foreground">{contact.telefono || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Localidad</p>
+                                    <p className="text-foreground">{contact.localidad || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Curso de Interés</p>
+                                    <p className="text-foreground">{contact.curso || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Canal de Origen</p>
+                                    <p className="text-foreground">{contact.canal || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Etapa Actual</p>
+                                    <Badge variant="outline" className={etapaColors[contact.etapaActual || contact.etapa] || ''}>
+                                      {contact.etapaActual || contact.etapa || '-'}
+                                    </Badge>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Asesor Asignado</p>
+                                    <p className="text-foreground">{contact.asesor || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Último Contacto</p>
+                                    <p className="text-foreground">{contact.ultimoContacto || '-'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Registro</p>
+                                    <p className="text-foreground">{contact.fechaCreacion || contact.createdAt || '-'}</p>
+                                  </div>
                                 </div>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="nuevo">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                    Nuevo
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="contactado">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                                    Contactado
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="interesado">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-purple-500" />
-                                    Interesado
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="negociando">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-orange-500" />
-                                    Negociando
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="convertido">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                                    Convertido
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="perdido">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-red-500" />
-                                    Perdido
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>{contact.asesor}</TableCell>
-                          <TableCell>{contact.ultimoContacto}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                onClick={() => handleEditLead(contact)}
-                                title="Editar"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                onClick={() => handleViewDetail(contact.id)}
-                                title="Ver detalle"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                                onClick={() => handleContactClick(contact)}
-                                title="Contactar"
-                              >
-                                <MessageCircle className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDeleteClick(contact)}
-                                title="Eliminar"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
                       ))}
                     </TableBody>
                   </Table>

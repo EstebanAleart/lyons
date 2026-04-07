@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye } from "lucide-react";
+import { Search, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
 import { ClienteDetailDrawer } from "@/components/cliente-detail-drawer";
@@ -64,6 +64,11 @@ export default function ClientesPage() {
   // Estado para el drawer de detalle
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [selectedClienteId, setSelectedClienteId] = useState(null);
+
+  // Estado para filas expandidas
+  const [expandedRow, setExpandedRow] = useState(null);
+
+  const toggleRow = (id) => setExpandedRow(prev => prev === id ? null : id);
   
   // Selectores de Redux
   const filters = useSelector(state => state.clientes.filters);
@@ -285,7 +290,7 @@ export default function ClientesPage() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium truncate">
-                                  {cliente.nombre}
+                                  {`${cliente.nombre} ${cliente.apellido}`.trim()}
                                 </p>
                                 <p className="text-sm text-muted-foreground truncate">
                                   {cliente.email || cliente.telefono || 'Sin contacto'}
@@ -327,6 +332,7 @@ export default function ClientesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
+                        <TableHead className="w-8"></TableHead>
                         <TableHead>Cliente</TableHead>
                         <TableHead>Contacto</TableHead>
                         <TableHead>Curso</TableHead>
@@ -339,87 +345,158 @@ export default function ClientesPage() {
                     <TableBody>
                       {paginatedClientes.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                             No se encontraron clientes
                           </TableCell>
                         </TableRow>
                       ) : (
                         paginatedClientes.map((cliente) => (
-                          <TableRow key={cliente.id} className="hover:bg-muted/30">
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500/10">
-                                  <UserCheck className="h-4 w-4 text-green-600" />
+                          <>
+                            <TableRow
+                              key={cliente.id}
+                              className={`hover:bg-muted/30 cursor-pointer ${expandedRow === cliente.id ? 'bg-muted/20' : ''}`}
+                              onClick={() => toggleRow(cliente.id)}
+                            >
+                              <TableCell className="pl-3 pr-0">
+                                {expandedRow === cliente.id
+                                  ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500/10">
+                                    <UserCheck className="h-4 w-4 text-green-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-foreground">
+                                      {`${cliente.nombre} ${cliente.apellido}`.trim()}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {cliente.genero || '-'}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-medium text-foreground">
-                                    {cliente.nombre}
-                                  </p>
+                              </TableCell>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <p className="text-sm">{cliente.email || '-'}</p>
                                   <p className="text-xs text-muted-foreground">
-                                    {cliente.genero || '-'}
+                                    {cliente.telefono || '-'}
                                   </p>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <p className="text-sm">{cliente.email || '-'}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {cliente.telefono || '-'}
-                                </p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{cliente.curso || '-'}</span>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{cliente.localidad || '-'}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={estadoColors[cliente.estadoCliente] || estadoColors.activo}
-                              >
-                                {cliente.estadoCliente || 'activo'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm text-muted-foreground">
-                                {cliente.fechaAlta || '-'}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handleEditCliente(cliente)}
-                                  title="Editar"
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">{cliente.curso || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">{cliente.localidad || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={estadoColors[cliente.estadoCliente] || estadoColors.activo}
                                 >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handleViewDetail(cliente.id)}
-                                  title="Ver detalle"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                                  onClick={() => handleContactClick(cliente)}
-                                  title="Contactar"
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                                  {cliente.estadoCliente || 'activo'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-muted-foreground">
+                                  {cliente.fechaAlta || '-'}
+                                </span>
+                              </TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-1 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    onClick={() => handleEditCliente(cliente)}
+                                    title="Editar"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    onClick={() => handleViewDetail(cliente.id)}
+                                    title="Ver detalle"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                    onClick={() => handleContactClick(cliente)}
+                                    title="Contactar"
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+
+                            {/* Fila expandida con todos los datos */}
+                            {expandedRow === cliente.id && (
+                              <TableRow key={`${cliente.id}-expanded`} className="bg-muted/10 hover:bg-muted/10">
+                                <TableCell colSpan={8} className="py-4 px-6">
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-3 text-sm">
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Sistema</p>
+                                      <p className="font-mono text-xs text-foreground truncate">{cliente.id}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Lead asociado</p>
+                                      <p className="font-mono text-xs text-foreground">{cliente.leadId || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Nombre</p>
+                                      <p className="text-foreground">{cliente.nombre || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Apellido</p>
+                                      <p className="text-foreground">{cliente.apellido || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Email</p>
+                                      <p className="text-foreground">{cliente.email || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Teléfono</p>
+                                      <p className="text-foreground">{cliente.telefono || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Género</p>
+                                      <p className="text-foreground">{cliente.genero || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Localidad</p>
+                                      <p className="text-foreground">{cliente.localidad || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Curso</p>
+                                      <p className="text-foreground">{cliente.curso || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Estado</p>
+                                      <Badge variant="outline" className={estadoColors[cliente.estadoCliente] || estadoColors.activo}>
+                                        {cliente.estadoCliente || 'activo'}
+                                      </Badge>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Alta</p>
+                                      <p className="text-foreground">{cliente.fechaAlta || '-'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Registro</p>
+                                      <p className="text-foreground">{cliente.createdAt || '-'}</p>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </>
                         ))
                       )}
                     </TableBody>
