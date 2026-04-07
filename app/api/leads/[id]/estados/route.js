@@ -1,86 +1,48 @@
-// app/api/leads/[id]/estados/route.js
-// API para gestionar historial de estados de un lead
+import { supabase } from '@/lib/supabase'
 
-import { Lead, HistorialEstadoLead, EstadoLead, Usuario } from '@/lib/models';
-import { v4 as uuidv4 } from 'uuid';
-
-// GET: Obtener historial de estados del lead
 export async function GET(request, { params }) {
   try {
-    const { id } = await params;
+    const { id } = await params
+    const { data, error } = await supabase
+      .from('historial_estado_lead')
+      .select('id, estado_id, cambiado_por, created_at, estados_lead(id, nombre, descripcion)')
+      .eq('lead_id', id)
+      .order('created_at', { ascending: false })
+    if (error) throw error
 
-    const historial = await HistorialEstadoLead.findAll({
-      where: { lead_id: id },
-      include: [
-        {
-          model: EstadoLead,
-          attributes: ['id', 'nombre', 'descripcion'],
-        },
-      ],
-      order: [['created_at', 'DESC']],
-    });
-
-    const result = historial.map(h => ({
+    return Response.json(data.map(h => ({
       id: h.id,
       estadoId: h.estado_id,
-      estado: h.EstadoLead?.nombre || 'Desconocido',
-      descripcion: h.EstadoLead?.descripcion,
+      estado: h.estados_lead?.nombre || 'Desconocido',
+      descripcion: h.estados_lead?.descripcion,
       fecha: h.created_at,
       cambiadoPor: h.cambiado_por || null,
-    }));
-
-    return Response.json(result);
+    })))
   } catch (error) {
-    console.error('Error al obtener historial de estados:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-// POST: Cambiar estado del lead
 export async function POST(request, { params }) {
   try {
-    const { id } = await params;
-    const body = await request.json();
-    const { estadoId, cambiadoPor } = body;
+    const { id } = await params
+    const { estadoId, cambiadoPor } = await request.json()
+    if (!estadoId) return Response.json({ error: 'estadoId es requerido' }, { status: 400 })
 
-    if (!estadoId) {
-      return Response.json({ error: 'estadoId es requerido' }, { status: 400 });
-    }
+    const [{ data: lead }, { data: estado }] = await Promise.all([
+      supabase.from('leads').select('id').eq('id', id).single(),
+      supabase.from('estados_lead').select('id, nombre').eq('id', estadoId).single()
+    ])
+    if (!lead) return Response.json({ error: 'Lead no encontrado' }, { status: 404 })
+    if (!estado) return Response.json({ error: 'Estado no encontrado' }, { status: 404 })
 
-    // Verificar que el lead existe
-    const lead = await Lead.findByPk(id);
-    if (!lead) {
-      return Response.json({ error: 'Lead no encontrado' }, { status: 404 });
-    }
+    const { data: entry, error } = await supabase.from('historial_estado_lead')
+      .insert({ lead_id: id, estado_id: estadoId, cambiado_por: cambiadoPor || null, created_at: new Date().toISOString() })
+      .select().single()
+    if (error) throw error
 
-    // Verificar que el estado existe
-    const estado = await EstadoLead.findByPk(estadoId);
-    if (!estado) {
-      return Response.json({ error: 'Estado no encontrado' }, { status: 404 });
-    }
-
-    // Crear el registro en el historial
-    const now = new Date();
-    const historialEntry = await HistorialEstadoLead.create({
-      id: uuidv4(),
-      lead_id: id,
-      estado_id: estadoId,
-      cambiado_por: cambiadoPor || null,
-      created_at: now,
-    });
-
-    return Response.json({
-      success: true,
-      historial: {
-        id: historialEntry.id,
-        estadoId: historialEntry.estado_id,
-        estado: estado.nombre,
-        fecha: historialEntry.created_at,
-        cambiadoPor: historialEntry.cambiado_por,
-      },
-    });
+    return Response.json({ success: true, historial: { id: entry.id, estadoId: entry.estado_id, estado: estado.nombre, fecha: entry.created_at, cambiadoPor: entry.cambiado_por } })
   } catch (error) {
-    console.error('Error al cambiar estado del lead:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Filter, Download, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye, Trash2 } from "lucide-react";
+import { Search, Filter, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
@@ -219,28 +219,6 @@ export default function LeadsPage() {
     }
   };
 
-  const handleExportCSV = () => {
-    const headers = ["Nombre", "Email", "Teléfono", "Curso", "Canal", "Etapa", "Asesor", "Fecha Creación", "Último Contacto"];
-    const rows = leads.map((c) => [
-      c.nombre,
-      c.email,
-      c.telefono,
-      c.curso,
-      c.canal,
-      c.etapa,
-      c.asesor,
-      c.fechaCreacion,
-      c.ultimoContacto,
-    ]);
-
-    const csvContent = [headers, ...rows].map((row) => row.map(cell => `"${cell || ''}"`).join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `contactos_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
   const activeFiltersCount = Object.values(filters).filter((f) => f !== "Todos" && f !== "").length;
 
   return (
@@ -265,10 +243,6 @@ export default function LeadsPage() {
             <Button onClick={handleNewLead} className="gap-2">
               <Plus className="h-4 w-4" />
               Nuevo Lead
-            </Button>
-            <Button onClick={handleExportCSV} variant="outline" className="gap-2 bg-transparent">
-              <Download className="h-4 w-4" />
-              Exportar CSV
             </Button>
           </div>
         </div>

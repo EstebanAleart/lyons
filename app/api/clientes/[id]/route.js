@@ -1,67 +1,41 @@
-// app/api/clientes/[id]/route.js
-// API Route para obtener, actualizar y eliminar un cliente específico
-import { Cliente, Lead, Genero, Localidad, LeadCurso, Curso, HistorialEstadoLead, EstadoLead, Interaccion } from '@/lib/models'
+import { supabase } from '@/lib/supabase'
 
-// GET - Obtener cliente por ID
 export async function GET(request, { params }) {
   try {
     const { id } = await params
 
-    const cliente = await Cliente.findByPk(id, {
-      include: [
-        {
-          model: Lead,
-          include: [
-            { model: Genero, attributes: ['descripcion'] },
-            { model: Localidad, attributes: ['id', 'nombre'] },
-            { 
-              model: LeadCurso, 
-              include: [{ model: Curso, attributes: ['id', 'nombre'] }] 
-            },
-            {
-              model: HistorialEstadoLead,
-              include: [{ model: EstadoLead, attributes: ['nombre'] }]
-            },
-            {
-              model: Interaccion
-            }
-          ]
-        }
-      ]
-    })
+    const { data, error } = await supabase
+      .from('clientes')
+      .select(`
+        *,
+        leads (
+          nombre, apellido, email, telefono, localidad_id,
+          generos (descripcion),
+          localidades (nombre),
+          lead_cursos (prioridad, cursos (id, nombre)),
+          historial_estado_lead (cambiado_por, created_at, estados_lead (nombre)),
+          interacciones (id, resultado, nota, created_at)
+        )
+      `)
+      .eq('id', id)
+      .single()
 
-    if (!cliente) {
-      return Response.json({ error: 'Cliente no encontrado' }, { status: 404 })
-    }
+    if (error) return Response.json({ error: 'Cliente no encontrado' }, { status: 404 })
 
-    const data = cliente.toJSON()
-    const lead = data.Lead || {}
-    
-    // Obtener cursos del lead
-    const cursos = lead.LeadCursos?.map(lc => ({
-      id: lc.Curso?.id,
-      nombre: lc.Curso?.nombre
-    })).filter(c => c.nombre) || []
+    const lead = data.leads || {}
+    const cursos = (lead.lead_cursos || [])
+      .sort((a, b) => a.prioridad - b.prioridad)
+      .map(lc => ({ id: lc.cursos?.id, nombre: lc.cursos?.nombre }))
+      .filter(c => c.nombre)
 
-    // Formatear historial de estados (ordenar por fecha desc)
-    const historialEstados = (lead.HistorialEstadoLeads || [])
+    const historialEstados = (lead.historial_estado_lead || [])
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .map(h => ({
-        estado: h.EstadoLead?.nombre || 'Desconocido',
-        fecha: h.created_at,
-        cambiadoPor: h.cambiado_por
-      }))
+      .map(h => ({ estado: h.estados_lead?.nombre || 'Desconocido', fecha: h.created_at, cambiadoPor: h.cambiado_por }))
 
-    // Formatear interacciones (ordenar por fecha desc, limitar a 10)
-    const interacciones = (lead.Interaccions || [])
+    const interacciones = (lead.interacciones || [])
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 10)
-      .map(i => ({
-        id: i.id,
-        resultado: i.resultado,
-        nota: i.nota,
-        fecha: i.created_at
-      }))
+      .map(i => ({ id: i.id, resultado: i.resultado, nota: i.nota, fecha: i.created_at }))
 
     return Response.json({
       id: data.id,
@@ -70,8 +44,8 @@ export async function GET(request, { params }) {
       apellido: lead.apellido || '',
       email: lead.email || '',
       telefono: lead.telefono || '',
-      genero: lead.Genero?.descripcion || '',
-      localidad: lead.Localidad?.nombre || '',
+      genero: lead.generos?.descripcion || '',
+      localidad: lead.localidades?.nombre || '',
       localidadId: lead.localidad_id,
       fechaAlta: data.fecha_alta,
       estadoCliente: data.estado_cliente || 'activo',
@@ -79,10 +53,11 @@ export async function GET(request, { params }) {
       cursos,
       historialEstados,
       interacciones,
-      // Stats
       stats: {
         totalInteracciones: interacciones.length,
-        diasComoCliente: data.fecha_alta ? Math.floor((new Date() - new Date(data.fecha_alta)) / (1000 * 60 * 60 * 24)) : 0
+        diasComoCliente: data.fecha_alta
+          ? Math.floor((new Date() - new Date(data.fecha_alta)) / (1000 * 60 * 60 * 24))
+          : 0
       }
     })
   } catch (error) {
@@ -91,77 +66,53 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT - Actualizar estado del cliente
 export async function PUT(request, { params }) {
   try {
     const { id } = await params
-    const body = await request.json()
-    const { estadoCliente } = body
+    const { estadoCliente } = await request.json()
 
-    const cliente = await Cliente.findByPk(id)
-
-    if (!cliente) {
-      return Response.json({ error: 'Cliente no encontrado' }, { status: 404 })
-    }
-
-    // Validar estado
     const estadosValidos = ['activo', 'inactivo', 'egresado', 'suspendido']
     if (estadoCliente && !estadosValidos.includes(estadoCliente)) {
-      return Response.json({ 
-        error: `Estado inválido. Debe ser uno de: ${estadosValidos.join(', ')}` 
-      }, { status: 400 })
+      return Response.json({ error: `Estado inválido. Debe ser uno de: ${estadosValidos.join(', ')}` }, { status: 400 })
     }
 
-    await cliente.update({
-      estado_cliente: estadoCliente
-    })
+    const { error } = await supabase
+      .from('clientes')
+      .update({ estado_cliente: estadoCliente })
+      .eq('id', id)
 
-    return Response.json({ 
-      success: true, 
-      message: 'Cliente actualizado',
-      estadoCliente: cliente.estado_cliente
-    })
+    if (error) throw error
+    return Response.json({ success: true, message: 'Cliente actualizado', estadoCliente })
   } catch (error) {
     console.error('Error en PUT /api/clientes/[id]:', error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-// DELETE - Eliminar cliente (vuelve a ser solo lead)
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params
 
-    const cliente = await Cliente.findByPk(id)
+    const [{ data: cliente, error: fetchError }, { data: estadoContactado }] = await Promise.all([
+      supabase.from('clientes').select('lead_id').eq('id', id).single(),
+      supabase.from('estados_lead').select('id').eq('nombre', 'contactado').single()
+    ])
 
-    if (!cliente) {
-      return Response.json({ error: 'Cliente no encontrado' }, { status: 404 })
-    }
+    if (fetchError) return Response.json({ error: 'Cliente no encontrado' }, { status: 404 })
 
-    const leadId = cliente.lead_id
-
-    // Actualizar el historial del lead - cambiar estado a "contactado" o similar
-    const estadoContactado = await EstadoLead.findOne({ 
-      where: { nombre: 'contactado' } 
-    })
-
-    if (estadoContactado && leadId) {
-      await HistorialEstadoLead.create({
-        lead_id: leadId,
+    if (estadoContactado && cliente.lead_id) {
+      await supabase.from('historial_estado_lead').insert({
+        lead_id: cliente.lead_id,
         estado_id: estadoContactado.id,
         cambiado_por: 'sistema',
-        created_at: new Date()
+        created_at: new Date().toISOString()
       })
     }
 
-    // Eliminar el registro de cliente
-    await cliente.destroy()
+    const { error: deleteError } = await supabase.from('clientes').delete().eq('id', id)
+    if (deleteError) throw deleteError
 
-    return Response.json({ 
-      success: true, 
-      message: 'Cliente eliminado. El lead se mantiene en el sistema.',
-      leadId
-    })
+    return Response.json({ success: true, message: 'Cliente eliminado. El lead se mantiene en el sistema.', leadId: cliente.lead_id })
   } catch (error) {
     console.error('Error en DELETE /api/clientes/[id]:', error)
     return Response.json({ error: error.message }, { status: 500 })

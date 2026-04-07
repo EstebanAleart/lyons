@@ -1,202 +1,99 @@
-// app/api/leads/[id]/route.js
-// API para obtener detalle completo de un lead y actualizarlo
-
-import { Lead, Genero, Localidad, Origen, Cliente, Interaccion, Canal, Usuario, HistorialEstadoLead, EstadoLead, LeadCurso, Curso } from '@/lib/models';
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request, { params }) {
   try {
-    const { id } = await params;
+    const { id } = await params
 
-    const lead = await Lead.findByPk(id, {
-      include: [
-        { model: Genero, attributes: ['codigo', 'descripcion'] },
-        { model: Localidad, attributes: ['nombre', 'region', 'pais'] },
-        { model: Origen, attributes: ['nombre'] },
-        { model: Cliente, attributes: ['id', 'fecha_alta', 'estado_cliente', 'created_at'] },
-      ],
-    });
+    const [
+      { data: lead, error },
+      { data: interacciones },
+      { data: historialEstados },
+      { data: cursosInteres }
+    ] = await Promise.all([
+      supabase.from('leads').select('*, generos(codigo,descripcion), localidades(nombre,region,pais), origenes(nombre), clientes(id,fecha_alta,estado_cliente,created_at)').eq('id', id).single(),
+      supabase.from('interacciones').select('*, canales(nombre), usuarios(nombre,email)').eq('lead_id', id).order('created_at', { ascending: false }),
+      supabase.from('historial_estado_lead').select('*, estados_lead(nombre)').eq('lead_id', id).order('created_at', { ascending: false }),
+      supabase.from('lead_cursos').select('*, cursos(nombre,activo)').eq('lead_id', id).order('prioridad', { ascending: true })
+    ])
 
-    if (!lead) {
-      return Response.json({ error: 'Lead no encontrado' }, { status: 404 });
-    }
+    if (error) return Response.json({ error: 'Lead no encontrado' }, { status: 404 })
 
-    // Obtener interacciones con canal y usuario
-    const interacciones = await Interaccion.findAll({
-      where: { lead_id: id },
-      include: [
-        { model: Canal, attributes: ['nombre'] },
-        { model: Usuario, attributes: ['nombre', 'email'] },
-      ],
-      order: [['created_at', 'DESC']],
-    });
-
-    // Obtener historial de estados
-    const historialEstados = await HistorialEstadoLead.findAll({
-      where: { lead_id: id },
-      include: [
-        { model: EstadoLead, attributes: ['nombre'] },
-      ],
-      order: [['created_at', 'DESC']],
-    });
-
-    // Obtener cursos de interés
-    const cursosInteres = await LeadCurso.findAll({
-      where: { lead_id: id },
-      include: [
-        { model: Curso, attributes: ['nombre', 'activo'] },
-      ],
-      order: [['prioridad', 'ASC']],
-    });
-
-    const result = {
+    return Response.json({
       id: lead.id,
       nombre: lead.nombre,
       apellido: lead.apellido,
       telefono: lead.telefono,
       email: lead.email,
-      genero: lead.Genero?.descripcion || lead.Genero?.codigo || null,
-      localidad: lead.Localidad ? {
-        nombre: lead.Localidad.nombre,
-        region: lead.Localidad.region,
-        pais: lead.Localidad.pais,
-      } : null,
-      origen: lead.Origen?.nombre || null,
+      genero: lead.generos?.descripcion || lead.generos?.codigo || null,
+      localidad: lead.localidades ? { nombre: lead.localidades.nombre, region: lead.localidades.region, pais: lead.localidades.pais } : null,
+      origen: lead.origenes?.nombre || null,
       createdAt: lead.created_at,
       updatedAt: lead.updated_at,
-      
-      // Cliente (si se convirtió)
-      cliente: lead.Cliente ? {
-        id: lead.Cliente.id,
-        fechaAlta: lead.Cliente.fecha_alta,
-        estado: lead.Cliente.estado_cliente,
-      } : null,
-      
-      // Interacciones
-      interacciones: interacciones.map(i => ({
-        id: i.id,
-        canal: i.Canal?.nombre || 'Desconocido',
-        resultado: i.resultado,
-        nota: i.nota,
-        fecha: i.created_at,
-        usuario: i.Usuario ? {
-          nombre: i.Usuario.nombre,
-          email: i.Usuario.email,
-        } : null,
-      })),
-      
-      // Historial de estados
-      historialEstados: historialEstados.map(h => ({
-        id: h.id,
-        estado: h.EstadoLead?.nombre || 'Desconocido',
-        cambiadoPor: h.cambiado_por,
-        fecha: h.created_at,
-      })),
-      
-      // Cursos de interés
-      cursosInteres: cursosInteres.map(c => ({
-        id: c.id,
-        curso: c.Curso?.nombre || 'Desconocido',
-        activo: c.Curso?.activo,
-        prioridad: c.prioridad,
-      })),
-      
-      // Estadísticas rápidas
-      stats: {
-        totalInteracciones: interacciones.length,
-        ultimaInteraccion: interacciones[0]?.created_at || null,
-        estadoActual: historialEstados[0]?.EstadoLead?.nombre || 'nuevo',
-        esCliente: !!lead.Cliente,
-      },
-    };
-
-    return Response.json(result);
+      cliente: lead.clientes ? { id: lead.clientes.id, fechaAlta: lead.clientes.fecha_alta, estado: lead.clientes.estado_cliente } : null,
+      interacciones: (interacciones || []).map(i => ({ id: i.id, canal: i.canales?.nombre || 'Desconocido', resultado: i.resultado, nota: i.nota, fecha: i.created_at, usuario: i.usuarios ? { nombre: i.usuarios.nombre, email: i.usuarios.email } : null })),
+      historialEstados: (historialEstados || []).map(h => ({ id: h.id, estado: h.estados_lead?.nombre || 'Desconocido', cambiadoPor: h.cambiado_por, fecha: h.created_at })),
+      cursosInteres: (cursosInteres || []).map(c => ({ id: c.id, curso: c.cursos?.nombre || 'Desconocido', activo: c.cursos?.activo, prioridad: c.prioridad })),
+      stats: { totalInteracciones: interacciones?.length || 0, ultimaInteraccion: interacciones?.[0]?.created_at || null, estadoActual: historialEstados?.[0]?.estados_lead?.nombre || 'nuevo', esCliente: !!lead.clientes }
+    })
   } catch (error) {
-    console.error('Error al obtener lead:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Error al obtener lead:', error)
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-// PUT - Actualizar lead
 export async function PUT(request, { params }) {
   try {
-    const { id } = await params;
-    const body = await request.json();
-    const { nombre, apellido, email, telefono, localidadId, origenId, cursoId } = body;
+    const { id } = await params
+    const body = await request.json()
+    const { nombre, apellido, email, telefono, localidadId, origenId, cursoId } = body
 
-    const lead = await Lead.findByPk(id);
-    
-    if (!lead) {
-      return Response.json({ error: 'Lead no encontrado' }, { status: 404 });
+    if (Object.prototype.hasOwnProperty.call(body, 'nombre') && !nombre?.trim()) {
+      return Response.json({ error: 'El nombre es obligatorio' }, { status: 400 })
     }
 
-    // Permitir updates parciales (ej: solo teléfono)
-    // Si se envía nombre, validar que no sea vacío
-    if (body.hasOwnProperty('nombre') && (!nombre || !nombre.trim())) {
-      return Response.json({ error: 'El nombre es obligatorio' }, { status: 400 });
-    }
+    const updateFields = { updated_at: new Date().toISOString() }
+    if (Object.prototype.hasOwnProperty.call(body, 'nombre')) updateFields.nombre = nombre.trim()
+    if (Object.prototype.hasOwnProperty.call(body, 'apellido')) updateFields.apellido = apellido?.trim() || null
+    if (Object.prototype.hasOwnProperty.call(body, 'email')) updateFields.email = email?.trim() || null
+    if (Object.prototype.hasOwnProperty.call(body, 'telefono')) updateFields.telefono = telefono?.trim() || null
+    if (Object.prototype.hasOwnProperty.call(body, 'localidadId')) updateFields.localidad_id = localidadId || null
+    if (Object.prototype.hasOwnProperty.call(body, 'origenId')) updateFields.origen_id = origenId || null
 
-    // Construir objeto de actualización solo con campos presentes
-    const updateFields = {};
-    if (body.hasOwnProperty('nombre')) updateFields.nombre = nombre.trim();
-    if (body.hasOwnProperty('apellido')) updateFields.apellido = apellido?.trim() || null;
-    if (body.hasOwnProperty('email')) updateFields.email = email?.trim() || null;
-    if (body.hasOwnProperty('telefono')) updateFields.telefono = telefono?.trim() || null;
-    if (body.hasOwnProperty('localidadId')) updateFields.localidad_id = localidadId || null;
-    if (body.hasOwnProperty('origenId')) updateFields.origen_id = origenId || null;
-    updateFields.updated_at = new Date();
+    const { error } = await supabase.from('leads').update(updateFields).eq('id', id)
+    if (error) throw error
 
-    await lead.update(updateFields);
-
-    // Si hay curso, actualizar o crear la relación
     if (cursoId) {
-      const existingCurso = await LeadCurso.findOne({ where: { lead_id: id } });
-      if (existingCurso) {
-        await existingCurso.update({ curso_id: cursoId });
+      const { data: existing } = await supabase.from('lead_cursos').select('id').eq('lead_id', id).limit(1).single()
+      if (existing) {
+        await supabase.from('lead_cursos').update({ curso_id: cursoId }).eq('id', existing.id)
       } else {
-        await LeadCurso.create({
-          lead_id: id,
-          curso_id: cursoId,
-          prioridad: 1,
-        });
+        await supabase.from('lead_cursos').insert({ lead_id: id, curso_id: cursoId, prioridad: 1 })
       }
     }
 
-    return Response.json({ 
-      id: lead.id, 
-      message: 'Lead actualizado exitosamente' 
-    });
-    
+    return Response.json({ id, message: 'Lead actualizado exitosamente' })
   } catch (error) {
-    console.error('Error al actualizar lead:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Error al actualizar lead:', error)
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-// DELETE - Eliminar un lead
 export async function DELETE(request, { params }) {
   try {
-    const { id } = await params;
+    const { id } = await params
 
-    const lead = await Lead.findByPk(id);
+    await Promise.all([
+      supabase.from('lead_cursos').delete().eq('lead_id', id),
+      supabase.from('historial_estado_lead').delete().eq('lead_id', id),
+      supabase.from('interacciones').delete().eq('lead_id', id),
+    ])
 
-    if (!lead) {
-      return Response.json({ error: 'Lead no encontrado' }, { status: 404 });
-    }
+    const { error } = await supabase.from('leads').delete().eq('id', id)
+    if (error) throw error
 
-    // Eliminar relaciones primero
-    await LeadCurso.destroy({ where: { lead_id: id } });
-    await HistorialEstadoLead.destroy({ where: { lead_id: id } });
-    await Interaccion.destroy({ where: { lead_id: id } });
-
-    // Eliminar el lead
-    await lead.destroy();
-
-    return Response.json({ 
-      message: 'Lead eliminado exitosamente' 
-    });
-    
+    return Response.json({ message: 'Lead eliminado exitosamente' })
   } catch (error) {
-    console.error('Error al eliminar lead:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Error al eliminar lead:', error)
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

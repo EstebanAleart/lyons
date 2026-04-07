@@ -1,88 +1,40 @@
-// app/api/interacciones/[id]/route.js
-// API Route para actualizar una interacción específica
+import { supabase } from '@/lib/supabase'
 
-import { Interaccion } from '@/lib/models'
-
-// PUT - Actualizar interacción (nota, usuario, etc.)
-export async function PUT(request, { params }) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const { nota, usuarioId } = body
-
-    const interaccion = await Interaccion.findByPk(id)
-
-    if (!interaccion) {
-      return Response.json({ error: 'Interacción no encontrada' }, { status: 404 })
-    }
-
-    await interaccion.update({
-      nota: nota !== undefined ? nota : interaccion.nota,
-      usuario_id: usuarioId !== undefined ? usuarioId : interaccion.usuario_id,
-      updated_at: new Date()
-    })
-
-    return Response.json({ 
-      success: true, 
-      message: 'Interacción actualizada',
-      interaccion: {
-        id: interaccion.id,
-        nota: interaccion.nota,
-        updated_at: interaccion.updated_at
-      }
-    })
-  } catch (error) {
-    console.error('Error en PUT /api/interacciones/[id]:', error)
-    return Response.json({ error: error.message }, { status: 500 })
-  }
-}
-
-// GET - Obtener una interacción específica
 export async function GET(request, { params }) {
   try {
     const { id } = await params
-
-    const interaccion = await Interaccion.findByPk(id)
-
-    if (!interaccion) {
-      return Response.json({ error: 'Interacción no encontrada' }, { status: 404 })
-    }
-
-    return Response.json({
-      id: interaccion.id,
-      leadId: interaccion.lead_id,
-      nota: interaccion.nota,
-      resultado: interaccion.resultado,
-      canalId: interaccion.canal_id,
-      usuarioId: interaccion.usuario_id,
-      createdAt: interaccion.created_at,
-      updatedAt: interaccion.updated_at
-    })
+    const { data, error } = await supabase.from('interacciones').select('*').eq('id', id).single()
+    if (error) return Response.json({ error: 'Interacción no encontrada' }, { status: 404 })
+    return Response.json({ id: data.id, leadId: data.lead_id, nota: data.nota, resultado: data.resultado, canalId: data.canal_id, usuarioId: data.usuario_id, createdAt: data.created_at, updatedAt: data.updated_at })
   } catch (error) {
-    console.error('Error en GET /api/interacciones/[id]:', error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-// DELETE - Eliminar una interacción
+export async function PUT(request, { params }) {
+  try {
+    const { id } = await params
+    const { nota, usuarioId } = await request.json()
+
+    const update = { updated_at: new Date().toISOString() }
+    if (nota !== undefined) update.nota = nota
+    if (usuarioId !== undefined) update.usuario_id = usuarioId
+
+    const { error } = await supabase.from('interacciones').update(update).eq('id', id)
+    if (error) throw error
+    return Response.json({ success: true, message: 'Interacción actualizada' })
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 })
+  }
+}
+
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params
-
-    const interaccion = await Interaccion.findByPk(id)
-
-    if (!interaccion) {
-      return Response.json({ error: 'Interacción no encontrada' }, { status: 404 })
-    }
-
-    await interaccion.destroy()
-
-    return Response.json({ 
-      success: true, 
-      message: 'Interacción eliminada'
-    })
+    const { error } = await supabase.from('interacciones').delete().eq('id', id)
+    if (error) throw error
+    return Response.json({ success: true, message: 'Interacción eliminada' })
   } catch (error) {
-    console.error('Error en DELETE /api/interacciones/[id]:', error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

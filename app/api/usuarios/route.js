@@ -1,24 +1,16 @@
-// app/api/usuarios/route.js
-// API para obtener usuarios/asesores
-
-import { Usuario } from '@/lib/models';
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const soloActivos = searchParams.get('activos') !== 'false';
+    const soloActivos = new URL(request.url).searchParams.get('activos') !== 'false'
 
-    const where = soloActivos ? { activo: true } : {};
+    let query = supabase.from('usuarios').select('id, nombre, email, rol, activo').order('nombre')
+    if (soloActivos) query = query.eq('activo', true)
 
-    const usuarios = await Usuario.findAll({
-      where,
-      attributes: ['id', 'nombre', 'email', 'rol', 'activo'],
-      order: [['nombre', 'ASC']],
-    });
-
-    return Response.json(usuarios);
+    const { data, error } = await query
+    if (error) throw error
+    return Response.json(data)
   } catch (error) {
-    console.error('Error al obtener usuarios:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

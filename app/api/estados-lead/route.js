@@ -1,18 +1,11 @@
-// app/api/estados-lead/route.js
-// API para obtener lista de estados disponibles para leads
+import { supabase } from '@/lib/supabase'
 
-import { EstadoLead } from '@/lib/models';
-
-export async function GET(request) {
+export async function GET() {
   try {
-    const estados = await EstadoLead.findAll({
-      attributes: ['id', 'nombre', 'descripcion'],
-      order: [['nombre', 'ASC']],
-    });
-
-    return Response.json(estados);
+    const { data, error } = await supabase.from('estados_lead').select('id, nombre, descripcion').order('nombre')
+    if (error) throw error
+    return Response.json(data)
   } catch (error) {
-    console.error('Error al obtener estados:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

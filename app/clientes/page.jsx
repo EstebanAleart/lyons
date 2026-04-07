@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye } from "lucide-react";
+import { Search, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye } from "lucide-react";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
 import { ClienteDetailDrawer } from "@/components/cliente-detail-drawer";
@@ -133,30 +133,6 @@ export default function ClientesPage() {
     setDetailDrawerOpen(true);
   };
 
-  const handleExportCSV = () => {
-    const headers = ['Nombre', 'Email', 'Teléfono', 'Localidad', 'Curso', 'Estado', 'Fecha Alta'];
-    const rows = filteredClientes.map(c => [
-      c.nombre,
-      c.email,
-      c.telefono,
-      c.localidad,
-      c.curso,
-      c.estadoCliente,
-      c.fechaAlta
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `clientes_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
   // Paginación
   const totalPages = Math.ceil(filteredClientes.length / pagination.perPage);
   const activeFiltersCount = Object.entries(filters).filter(([k, v]) => k !== 'search' && v !== 'Todos').length;
@@ -173,10 +149,6 @@ export default function ClientesPage() {
               {isFullyLoaded && " ✓"}
             </p>
           </div>
-          <Button onClick={handleExportCSV} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
         </div>
 
         {/* Progress bar mientras carga */}

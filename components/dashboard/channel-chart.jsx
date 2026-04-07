@@ -26,7 +26,7 @@ export function ChannelChart() {
     fetch('/api/canales')
       .then(res => res.json())
       .then(data => {
-        setCanalMetrics(data)
+        setCanalMetrics(Array.isArray(data) ? data : [])
         setLoading(false)
       })
       .catch(() => setLoading(false))

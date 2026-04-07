@@ -1,18 +1,11 @@
-// app/api/origenes/route.js
-import { Origen } from '@/lib/models';
+import { supabase } from '@/lib/supabase'
 
 export async function GET() {
   try {
-    const origenes = await Origen.findAll({
-      order: [['nombre', 'ASC']],
-    });
-    
-    return Response.json(origenes.map(o => ({
-      id: o.id,
-      nombre: o.nombre,
-    })));
+    const { data, error } = await supabase.from('origenes').select('id, nombre').order('nombre')
+    if (error) throw error
+    return Response.json(data)
   } catch (error) {
-    console.error('Error en /api/origenes:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

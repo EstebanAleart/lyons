@@ -26,7 +26,7 @@ export function ActivityChart() {
     fetch('/api/actividad')
       .then(res => res.json())
       .then(data => {
-        setLeadsPorDia(data)
+        setLeadsPorDia(Array.isArray(data) ? data : [])
         setLoading(false)
       })
       .catch(() => setLoading(false))
