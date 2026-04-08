@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
 import { ClienteDetailDrawer } from "@/components/cliente-detail-drawer";
@@ -216,18 +216,15 @@ export default function ClientesPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={filters.localidad} onValueChange={(v) => handleFilterChange("localidad", v)}>
-                  <SelectTrigger className="w-full md:w-[160px]">
-                    <SelectValue placeholder="Localidad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {localidades.map((loc) => (
-                      <SelectItem key={loc} value={loc}>
-                        {loc}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative w-full md:w-[160px]">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Localidad..."
+                    value={filters.localidad === 'Todos' ? '' : filters.localidad}
+                    onChange={(e) => handleFilterChange("localidad", e.target.value || 'Todos')}
+                    className="pl-9"
+                  />
+                </div>
 
                 {activeFiltersCount > 0 && (
                   <Button variant="ghost" size="sm" onClick={handleClearFilters} className="gap-1">
@@ -441,56 +438,62 @@ export default function ClientesPage() {
                             {expandedRow === cliente.id && (
                               <TableRow key={`${cliente.id}-expanded`} className="bg-muted/10 hover:bg-muted/10">
                                 <TableCell colSpan={8} className="py-4 px-6">
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-3 text-sm">
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Sistema</p>
-                                      <p className="font-mono text-xs text-foreground truncate">{cliente.id}</p>
+                                  <div className="space-y-4 text-sm">
+                                    {/* Datos principales */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-3">
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Nombre</p>
+                                        <p className="text-foreground">{cliente.nombre || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Apellido</p>
+                                        <p className="text-foreground">{cliente.apellido || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Género</p>
+                                        <p className="text-foreground">{cliente.genero || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Estado</p>
+                                        <Badge variant="outline" className={estadoColors[cliente.estadoCliente] || estadoColors.activo}>
+                                          {cliente.estadoCliente || 'activo'}
+                                        </Badge>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Email</p>
+                                        <p className="text-foreground">{cliente.email || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Teléfono</p>
+                                        <p className="text-foreground">{cliente.telefono || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Localidad</p>
+                                        <p className="text-foreground">{cliente.localidad || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Curso</p>
+                                        <p className="text-foreground">{cliente.curso || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Alta</p>
+                                        <p className="text-foreground">{cliente.fechaAlta || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Registro</p>
+                                        <p className="text-foreground">{cliente.createdAt || '-'}</p>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Lead asociado</p>
-                                      <p className="font-mono text-xs text-foreground">{cliente.leadId || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Nombre</p>
-                                      <p className="text-foreground">{cliente.nombre || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Apellido</p>
-                                      <p className="text-foreground">{cliente.apellido || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Email</p>
-                                      <p className="text-foreground">{cliente.email || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Teléfono</p>
-                                      <p className="text-foreground">{cliente.telefono || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Género</p>
-                                      <p className="text-foreground">{cliente.genero || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Localidad</p>
-                                      <p className="text-foreground">{cliente.localidad || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Curso</p>
-                                      <p className="text-foreground">{cliente.curso || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Estado</p>
-                                      <Badge variant="outline" className={estadoColors[cliente.estadoCliente] || estadoColors.activo}>
-                                        {cliente.estadoCliente || 'activo'}
-                                      </Badge>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Alta</p>
-                                      <p className="text-foreground">{cliente.fechaAlta || '-'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Registro</p>
-                                      <p className="text-foreground">{cliente.createdAt || '-'}</p>
+                                    {/* IDs al final, sin superposición */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 pt-2 border-t border-border/40">
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Sistema</p>
+                                        <p className="font-mono text-xs text-muted-foreground">{cliente.id}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Lead asociado</p>
+                                        <p className="font-mono text-xs text-muted-foreground">{cliente.leadId || '-'}</p>
+                                      </div>
                                     </div>
                                   </div>
                                 </TableCell>

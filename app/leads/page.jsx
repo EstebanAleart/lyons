@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Filter, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Filter, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye, Trash2, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
@@ -293,7 +293,7 @@ export default function LeadsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
               {/* Search */}
               <div className="relative lg:col-span-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -410,6 +410,17 @@ export default function LeadsPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Localidad Filter */}
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Localidad..."
+                  value={filters.localidad || ''}
+                  onChange={(e) => handleFilterChange("localidad", e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
             
             {/* Filtros de contacto */}
