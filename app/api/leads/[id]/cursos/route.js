@@ -1,122 +1,59 @@
-// app/api/leads/[id]/cursos/route.js
-// API para gestionar cursos de interés de un lead
+import { supabase } from '@/lib/supabase'
 
-import { Lead, LeadCurso, Curso } from '@/lib/models';
-import { v4 as uuidv4 } from 'uuid';
-
-// GET: Obtener cursos de interés del lead
 export async function GET(request, { params }) {
   try {
-    const { id } = await params;
+    const { id } = await params
+    const { data, error } = await supabase
+      .from('lead_cursos')
+      .select('id, curso_id, prioridad, cursos(id, nombre, descripcion, activo)')
+      .eq('lead_id', id)
+      .order('prioridad')
+    if (error) throw error
 
-    const leadCursos = await LeadCurso.findAll({
-      where: { lead_id: id },
-      include: [{
-        model: Curso,
-        attributes: ['id', 'nombre', 'descripcion', 'activo'],
-      }],
-      order: [['prioridad', 'ASC']],
-    });
-
-    const result = leadCursos.map(lc => ({
-      id: lc.id,
-      cursoId: lc.curso_id,
-      curso: lc.Curso?.nombre || 'Curso desconocido',
-      descripcion: lc.Curso?.descripcion,
-      prioridad: lc.prioridad,
-      activo: lc.Curso?.activo,
-    }));
-
-    return Response.json(result);
+    return Response.json(data.map(lc => ({ id: lc.id, cursoId: lc.curso_id, curso: lc.cursos?.nombre || 'Curso desconocido', descripcion: lc.cursos?.descripcion, prioridad: lc.prioridad, activo: lc.cursos?.activo })))
   } catch (error) {
-    console.error('Error al obtener cursos de interés:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-// POST: Agregar un curso de interés al lead
 export async function POST(request, { params }) {
   try {
-    const { id } = await params;
-    const body = await request.json();
-    const { cursoId, prioridad } = body;
+    const { id } = await params
+    const { cursoId, prioridad } = await request.json()
+    if (!cursoId) return Response.json({ error: 'cursoId es requerido' }, { status: 400 })
 
-    if (!cursoId) {
-      return Response.json({ error: 'cursoId es requerido' }, { status: 400 });
-    }
+    const [{ data: lead }, { data: curso }, { data: existente }] = await Promise.all([
+      supabase.from('leads').select('id').eq('id', id).single(),
+      supabase.from('cursos').select('id, nombre').eq('id', cursoId).single(),
+      supabase.from('lead_cursos').select('id').eq('lead_id', id).eq('curso_id', cursoId).single()
+    ])
+    if (!lead) return Response.json({ error: 'Lead no encontrado' }, { status: 404 })
+    if (!curso) return Response.json({ error: 'Curso no encontrado' }, { status: 404 })
+    if (existente) return Response.json({ error: 'El lead ya tiene este curso asignado' }, { status: 400 })
 
-    // Verificar que el lead existe
-    const lead = await Lead.findByPk(id);
-    if (!lead) {
-      return Response.json({ error: 'Lead no encontrado' }, { status: 404 });
-    }
+    const { data: maxRow, error: maxError } = await supabase.from('lead_cursos').select('prioridad').eq('lead_id', id).order('prioridad', { ascending: false }).limit(1).single()
+    if (maxError && maxError.code !== 'PGRST116') throw maxError
+    const nuevaPrioridad = prioridad || (maxRow ? maxRow.prioridad + 1 : 1)
 
-    // Verificar que el curso existe
-    const curso = await Curso.findByPk(cursoId);
-    if (!curso) {
-      return Response.json({ error: 'Curso no encontrado' }, { status: 404 });
-    }
+    const { data: leadCurso, error } = await supabase.from('lead_cursos').insert({ lead_id: id, curso_id: cursoId, prioridad: nuevaPrioridad }).select().single()
+    if (error) throw error
 
-    // Verificar si ya existe
-    const existente = await LeadCurso.findOne({
-      where: { lead_id: id, curso_id: cursoId },
-    });
-
-    if (existente) {
-      return Response.json({ error: 'El lead ya tiene este curso asignado' }, { status: 400 });
-    }
-
-    // Obtener la prioridad máxima actual
-    const maxPrioridad = await LeadCurso.max('prioridad', { where: { lead_id: id } });
-    const nuevaPrioridad = prioridad || (maxPrioridad ? maxPrioridad + 1 : 1);
-
-    // Crear la relación
-    const leadCurso = await LeadCurso.create({
-      id: uuidv4(),
-      lead_id: id,
-      curso_id: cursoId,
-      prioridad: nuevaPrioridad,
-    });
-
-    return Response.json({
-      success: true,
-      leadCurso: {
-        id: leadCurso.id,
-        cursoId: leadCurso.curso_id,
-        curso: curso.nombre,
-        prioridad: leadCurso.prioridad,
-      },
-    });
+    return Response.json({ success: true, leadCurso: { id: leadCurso.id, cursoId: leadCurso.curso_id, curso: curso.nombre, prioridad: leadCurso.prioridad } })
   } catch (error) {
-    console.error('Error al agregar curso de interés:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-// DELETE: Eliminar un curso de interés del lead
 export async function DELETE(request, { params }) {
   try {
-    const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const leadCursoId = searchParams.get('leadCursoId');
+    const { id } = await params
+    const leadCursoId = new URL(request.url).searchParams.get('leadCursoId')
+    if (!leadCursoId) return Response.json({ error: 'leadCursoId es requerido' }, { status: 400 })
 
-    if (!leadCursoId) {
-      return Response.json({ error: 'leadCursoId es requerido' }, { status: 400 });
-    }
-
-    const leadCurso = await LeadCurso.findOne({
-      where: { id: leadCursoId, lead_id: id },
-    });
-
-    if (!leadCurso) {
-      return Response.json({ error: 'Relación no encontrada' }, { status: 404 });
-    }
-
-    await leadCurso.destroy();
-
-    return Response.json({ success: true });
+    const { error } = await supabase.from('lead_cursos').delete().eq('id', leadCursoId).eq('lead_id', id)
+    if (error) throw error
+    return Response.json({ success: true })
   } catch (error) {
-    console.error('Error al eliminar curso de interés:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

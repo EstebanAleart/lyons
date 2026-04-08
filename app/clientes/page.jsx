@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo, useState } from "react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppLayout } from "@/components/dashboard/app-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -23,10 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye } from "lucide-react";
+import { Search, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronRight, Pencil, Eye, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
 import { ClienteDetailDrawer } from "@/components/cliente-detail-drawer";
+import { useRole } from "@/lib/hooks/useRole";
 import {
   fetchAllClientesIncrementally,
   setFilter,
@@ -52,6 +53,7 @@ const estadoColors = {
 export default function ClientesPage() {
   const dispatch = useDispatch();
   const hasFetched = useRef(false);
+  const { isAdmin } = useRole();
   
   // Estado para el modal de contacto
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -64,6 +66,11 @@ export default function ClientesPage() {
   // Estado para el drawer de detalle
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [selectedClienteId, setSelectedClienteId] = useState(null);
+
+  // Estado para filas expandidas
+  const [expandedRow, setExpandedRow] = useState(null);
+
+  const toggleRow = (id) => setExpandedRow(prev => prev === id ? null : id);
   
   // Selectores de Redux
   const filters = useSelector(state => state.clientes.filters);
@@ -133,30 +140,6 @@ export default function ClientesPage() {
     setDetailDrawerOpen(true);
   };
 
-  const handleExportCSV = () => {
-    const headers = ['Nombre', 'Email', 'Teléfono', 'Localidad', 'Curso', 'Estado', 'Fecha Alta'];
-    const rows = filteredClientes.map(c => [
-      c.nombre,
-      c.email,
-      c.telefono,
-      c.localidad,
-      c.curso,
-      c.estadoCliente,
-      c.fechaAlta
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `clientes_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
   // Paginación
   const totalPages = Math.ceil(filteredClientes.length / pagination.perPage);
   const activeFiltersCount = Object.entries(filters).filter(([k, v]) => k !== 'search' && v !== 'Todos').length;
@@ -169,32 +152,35 @@ export default function ClientesPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
             <p className="text-muted-foreground">
-              {loadedCount.toLocaleString()} de {total.toLocaleString()} clientes cargados
-              {isFullyLoaded && " ✓"}
+              {isFullyLoaded
+                ? `${loadedCount.toLocaleString()} clientes cargados ✓`
+                : `Cargando clientes...`}
             </p>
           </div>
-          <Button onClick={handleExportCSV} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
         </div>
 
-        {/* Progress bar mientras carga */}
+        {/* Indicador de carga */}
         {!isFullyLoaded && total > 0 && (
-          <Card className="border-border/50">
-            <CardContent className="py-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Cargando clientes...</span>
-                  <span className="font-medium">{loadedCount.toLocaleString()} / {total.toLocaleString()}</span>
+          isAdmin ? (
+            <Card className="border-border/50">
+              <CardContent className="py-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Cargando clientes...</span>
+                    <span className="font-medium">{loadedCount.toLocaleString()} / {total.toLocaleString()}</span>
+                  </div>
+                  <Progress value={loadProgress} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {Math.round(loadProgress)}% - Puedes empezar a buscar mientras se cargan más datos
+                  </p>
                 </div>
-                <Progress value={loadProgress} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  {Math.round(loadProgress)}% - Puedes empezar a buscar mientras se cargan más datos
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <p className="text-xs text-muted-foreground px-1">
+              Cargando datos en segundo plano...
+            </p>
+          )
         )}
 
         <Card className="border-border/50">
@@ -239,18 +225,15 @@ export default function ClientesPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={filters.localidad} onValueChange={(v) => handleFilterChange("localidad", v)}>
-                  <SelectTrigger className="w-full md:w-[160px]">
-                    <SelectValue placeholder="Localidad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {localidades.map((loc) => (
-                      <SelectItem key={loc} value={loc}>
-                        {loc}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative w-full md:w-[160px]">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Localidad..."
+                    value={filters.localidad === 'Todos' ? '' : filters.localidad}
+                    onChange={(e) => handleFilterChange("localidad", e.target.value || 'Todos')}
+                    className="pl-9"
+                  />
+                </div>
 
                 {activeFiltersCount > 0 && (
                   <Button variant="ghost" size="sm" onClick={handleClearFilters} className="gap-1">
@@ -300,51 +283,92 @@ export default function ClientesPage() {
                     </div>
                   ) : (
                     paginatedClientes.map((cliente) => (
-                      <div
-                        key={cliente.id}
-                        className="p-4 hover:bg-muted/50 cursor-pointer active:bg-muted transition-colors"
-                        onClick={() => handleViewDetail(cliente.id)}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10 flex-shrink-0">
-                            <UserCheck className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium truncate">
-                                  {cliente.nombre}
-                                </p>
-                                <p className="text-sm text-muted-foreground truncate">
-                                  {cliente.email || cliente.telefono || 'Sin contacto'}
-                                </p>
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className={`text-xs flex-shrink-0 ${estadoColors[cliente.estadoCliente] || estadoColors.activo}`}
-                              >
-                                {cliente.estadoCliente || 'activo'}
-                              </Badge>
+                      <div key={cliente.id} className="hover:bg-muted/50 transition-colors">
+                        {/* Fila principal */}
+                        <div
+                          className="p-4 cursor-pointer"
+                          onClick={() => toggleRow(cliente.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10 shrink-0">
+                              <UserCheck className="h-5 w-5 text-green-600" />
                             </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <span className="text-xs text-muted-foreground truncate">
-                                {cliente.curso || 'Sin curso'}
-                              </span>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="h-7 text-xs gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleContactClick(cliente);
-                                }}
-                              >
-                                <MessageCircle className="h-3 w-3" />
-                                Contactar
-                              </Button>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium truncate">
+                                    {`${cliente.nombre} ${cliente.apellido}`.trim()}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground truncate">
+                                    {cliente.email || cliente.telefono || 'Sin contacto'}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${estadoColors[cliente.estadoCliente] || estadoColors.activo}`}
+                                  >
+                                    {cliente.estadoCliente || 'activo'}
+                                  </Badge>
+                                  {expandedRow === cliente.id
+                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between mt-3">
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {cliente.localidad || cliente.curso || 'Sin datos'}
+                                </span>
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleEditCliente(cliente)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleViewDetail(cliente.id)}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleContactClick(cliente)}>
+                                    <MessageCircle className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
+                        {/* Desplegable mobile */}
+                        {expandedRow === cliente.id && (
+                          <div className="px-4 pb-4 bg-muted/10 border-t">
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm pt-3">
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Email</p>
+                                <p className="text-foreground text-xs">{cliente.email || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Teléfono</p>
+                                <p className="text-foreground text-xs">{cliente.telefono || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Género</p>
+                                <p className="text-foreground text-xs">{cliente.genero || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Localidad</p>
+                                <p className="text-foreground text-xs">{cliente.localidad || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Curso</p>
+                                <p className="text-foreground text-xs">{cliente.curso || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Alta</p>
+                                <p className="text-foreground text-xs">{cliente.fechaAlta || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Registro</p>
+                                <p className="text-foreground text-xs">{cliente.createdAt || '-'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
@@ -355,6 +379,7 @@ export default function ClientesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
+                        <TableHead className="w-8"></TableHead>
                         <TableHead>Cliente</TableHead>
                         <TableHead>Contacto</TableHead>
                         <TableHead>Curso</TableHead>
@@ -367,87 +392,163 @@ export default function ClientesPage() {
                     <TableBody>
                       {paginatedClientes.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                             No se encontraron clientes
                           </TableCell>
                         </TableRow>
                       ) : (
                         paginatedClientes.map((cliente) => (
-                          <TableRow key={cliente.id} className="hover:bg-muted/30">
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500/10">
-                                  <UserCheck className="h-4 w-4 text-green-600" />
+                          <React.Fragment key={cliente.id}>
+                            <TableRow
+                              className={`hover:bg-muted/30 cursor-pointer ${expandedRow === cliente.id ? 'bg-muted/20' : ''}`}
+                              onClick={() => toggleRow(cliente.id)}
+                            >
+                              <TableCell className="pl-3 pr-0">
+                                {expandedRow === cliente.id
+                                  ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500/10">
+                                    <UserCheck className="h-4 w-4 text-green-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-foreground">
+                                      {`${cliente.nombre} ${cliente.apellido}`.trim()}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {cliente.genero || '-'}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-medium text-foreground">
-                                    {cliente.nombre}
-                                  </p>
+                              </TableCell>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <p className="text-sm">{cliente.email || '-'}</p>
                                   <p className="text-xs text-muted-foreground">
-                                    {cliente.genero || '-'}
+                                    {cliente.telefono || '-'}
                                   </p>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <p className="text-sm">{cliente.email || '-'}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {cliente.telefono || '-'}
-                                </p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{cliente.curso || '-'}</span>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{cliente.localidad || '-'}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={estadoColors[cliente.estadoCliente] || estadoColors.activo}
-                              >
-                                {cliente.estadoCliente || 'activo'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm text-muted-foreground">
-                                {cliente.fechaAlta || '-'}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handleEditCliente(cliente)}
-                                  title="Editar"
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">{cliente.curso || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">{cliente.localidad || '-'}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={estadoColors[cliente.estadoCliente] || estadoColors.activo}
                                 >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handleViewDetail(cliente.id)}
-                                  title="Ver detalle"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                                  onClick={() => handleContactClick(cliente)}
-                                  title="Contactar"
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                                  {cliente.estadoCliente || 'activo'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-muted-foreground">
+                                  {cliente.fechaAlta || '-'}
+                                </span>
+                              </TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-1 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    onClick={() => handleEditCliente(cliente)}
+                                    title="Editar"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    onClick={() => handleViewDetail(cliente.id)}
+                                    title="Ver detalle"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                    onClick={() => handleContactClick(cliente)}
+                                    title="Contactar"
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+
+                            {/* Fila expandida con todos los datos */}
+                            {expandedRow === cliente.id && (
+                              <TableRow key={`${cliente.id}-expanded`} className="bg-muted/10 hover:bg-muted/10">
+                                <TableCell colSpan={8} className="py-4 px-6">
+                                  <div className="space-y-4 text-sm">
+                                    {/* Datos principales */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-3">
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Nombre</p>
+                                        <p className="text-foreground">{cliente.nombre || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Apellido</p>
+                                        <p className="text-foreground">{cliente.apellido || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Género</p>
+                                        <p className="text-foreground">{cliente.genero || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Estado</p>
+                                        <Badge variant="outline" className={estadoColors[cliente.estadoCliente] || estadoColors.activo}>
+                                          {cliente.estadoCliente || 'activo'}
+                                        </Badge>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Email</p>
+                                        <p className="text-foreground">{cliente.email || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Teléfono</p>
+                                        <p className="text-foreground">{cliente.telefono || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Localidad</p>
+                                        <p className="text-foreground">{cliente.localidad || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Curso</p>
+                                        <p className="text-foreground">{cliente.curso || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Alta</p>
+                                        <p className="text-foreground">{cliente.fechaAlta || '-'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Registro</p>
+                                        <p className="text-foreground">{cliente.createdAt || '-'}</p>
+                                      </div>
+                                    </div>
+                                    {/* IDs al final, sin superposición */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 pt-2 border-t border-border/40">
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Sistema</p>
+                                        <p className="font-mono text-xs text-muted-foreground">{cliente.id}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">ID Lead asociado</p>
+                                        <p className="font-mono text-xs text-muted-foreground">{cliente.leadId || '-'}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
                         ))
                       )}
                     </TableBody>

@@ -21,8 +21,9 @@ export function CourseChart() {
     fetch('/api/cursos')
       .then(res => res.json())
       .then(data => {
-        const total = data.reduce((acc, c) => acc + parseInt(c.cantidad || 0, 10), 0)
-        const cursos = data.map(c => ({
+        const arr = Array.isArray(data) ? data : []
+        const total = arr.reduce((acc, c) => acc + parseInt(c.cantidad || 0, 10), 0)
+        const cursos = arr.map(c => ({
           curso: c.nombre,
           cantidad: parseInt(c.cantidad || 0, 10),
           porcentaje: total > 0 ? ((parseInt(c.cantidad || 0, 10) / total) * 100).toFixed(1) : 0

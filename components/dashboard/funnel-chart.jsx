@@ -25,7 +25,8 @@ export function FunnelChart() {
     fetch('/api/funnel')
       .then(res => res.json())
       .then(data => {
-        const dataWithColors = data.map((item, index) => ({
+        const arr = Array.isArray(data) ? data : []
+        const dataWithColors = arr.map((item, index) => ({
           ...item,
           color: COLORS[index % COLORS.length]
         }))

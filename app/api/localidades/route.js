@@ -1,56 +1,27 @@
-// app/api/localidades/route.js
-import { Localidad } from '@/lib/models';
+import { supabase } from '@/lib/supabase'
 
 export async function GET() {
   try {
-    const localidades = await Localidad.findAll({
-      order: [['nombre', 'ASC']],
-    });
-    
-    return Response.json(localidades.map(l => ({
-      id: l.id,
-      nombre: l.nombre,
-      region: l.region,
-      pais: l.pais,
-    })));
+    const { data, error } = await supabase.from('localidades').select('id, nombre, region, pais').order('nombre')
+    if (error) throw error
+    return Response.json(data)
   } catch (error) {
-    console.error('Error en /api/localidades:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function POST(request) {
   try {
-    const { nombre, region = null, pais = 'Uruguay' } = await request.json();
-    
-    if (!nombre?.trim()) {
-      return Response.json({ error: 'El nombre es requerido' }, { status: 400 });
-    }
+    const { nombre, region = null, pais = 'Uruguay' } = await request.json()
+    if (!nombre?.trim()) return Response.json({ error: 'El nombre es requerido' }, { status: 400 })
 
-    // Verificar si ya existe
-    const existente = await Localidad.findOne({
-      where: { nombre: nombre.trim() }
-    });
-    
-    if (existente) {
-      return Response.json({ error: 'Ya existe una localidad con ese nombre' }, { status: 409 });
-    }
+    const { data: existente } = await supabase.from('localidades').select('id').eq('nombre', nombre.trim()).single()
+    if (existente) return Response.json({ error: 'Ya existe una localidad con ese nombre' }, { status: 409 })
 
-    const nuevaLocalidad = await Localidad.create({
-      nombre: nombre.trim(),
-      region,
-      pais
-    });
-
-    return Response.json({
-      id: nuevaLocalidad.id,
-      nombre: nuevaLocalidad.nombre,
-      region: nuevaLocalidad.region,
-      pais: nuevaLocalidad.pais,
-    });
-    
+    const { data, error } = await supabase.from('localidades').insert({ nombre: nombre.trim(), region, pais }).select().single()
+    if (error) throw error
+    return Response.json(data)
   } catch (error) {
-    console.error('Error creando localidad:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

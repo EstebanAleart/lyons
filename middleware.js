@@ -4,20 +4,24 @@ import { NextResponse } from "next/server"
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const session = req.auth
-  
+
   // Rutas públicas
   if (pathname === "/" || pathname === "/no-autorizado" || pathname.startsWith("/api")) {
     return NextResponse.next()
   }
-  
-  // Proteger dashboard - requiere autenticación
-  if (pathname.startsWith("/dashboard")) {
-    if (!session) {
-      return NextResponse.redirect(new URL("/", req.url))
-    }
-    // El chequeo de rol se hace en el dashboard mismo
+
+  // Requiere sesión para todo lo demás
+  if (!session) {
+    return NextResponse.redirect(new URL("/", req.url))
   }
-  
+
+  // /system solo para admin
+  if (pathname.startsWith("/system")) {
+    if (session.user?.rol !== "admin") {
+      return NextResponse.redirect(new URL("/no-autorizado", req.url))
+    }
+  }
+
   return NextResponse.next()
 })
 

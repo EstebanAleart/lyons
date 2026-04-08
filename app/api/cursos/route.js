@@ -1,58 +1,42 @@
-// app/api/cursos/route.js
-// API Route para obtener cursos desde la DB
-import { Curso, LeadCurso } from '@/lib/models';
-import { sequelize } from '@/lib/models';
+import { supabase } from '@/lib/supabase'
 
-export async function GET(request) {
+export async function GET() {
   try {
-    // Cursos con cantidad de leads interesados
-    const cursos = await Curso.findAll({
-      attributes: [
-        'id', 'nombre', 'activo',
-        [sequelize.fn('COUNT', sequelize.col('LeadCursos.id')), 'cantidad']
-      ],
-      include: [{ model: LeadCurso, attributes: [] }],
-      group: ['Curso.id'],
-      order: [[sequelize.literal('cantidad'), 'DESC']]
-    });
-    return Response.json(cursos);
+    const { data, error } = await supabase.rpc('get_cursos_with_count')
+    if (error) throw error
+    return Response.json(data)
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function POST(request) {
   try {
-    const { nombre, descripcion = null } = await request.json();
-    
+    const { nombre, descripcion = null } = await request.json()
+
     if (!nombre?.trim()) {
-      return Response.json({ error: 'El nombre es requerido' }, { status: 400 });
+      return Response.json({ error: 'El nombre es requerido' }, { status: 400 })
     }
 
-    // Verificar si ya existe
-    const existente = await Curso.findOne({
-      where: { nombre: nombre.trim() }
-    });
-    
+    const { data: existente } = await supabase
+      .from('cursos')
+      .select('id')
+      .eq('nombre', nombre.trim())
+      .single()
+
     if (existente) {
-      return Response.json({ error: 'Ya existe un curso con ese nombre' }, { status: 409 });
+      return Response.json({ error: 'Ya existe un curso con ese nombre' }, { status: 409 })
     }
 
-    const nuevoCurso = await Curso.create({
-      nombre: nombre.trim(),
-      descripcion,
-      activo: true
-    });
+    const { data, error } = await supabase
+      .from('cursos')
+      .insert({ nombre: nombre.trim(), descripcion, activo: true })
+      .select()
+      .single()
 
-    return Response.json({
-      id: nuevoCurso.id,
-      nombre: nuevoCurso.nombre,
-      descripcion: nuevoCurso.descripcion,
-      activo: nuevoCurso.activo,
-    });
-    
+    if (error) throw error
+    return Response.json(data, { status: 201 })
   } catch (error) {
-    console.error('Error creando curso:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }

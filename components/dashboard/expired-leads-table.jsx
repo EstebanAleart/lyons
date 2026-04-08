@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Phone, Mail, AlertCircle, Download, Search, ChevronLeft, ChevronRight, X, MessageCircle, Eye, Pencil } from 'lucide-react'
+import { Phone, Mail, AlertCircle, Search, ChevronLeft, ChevronRight, X, MessageCircle, Eye, Pencil } from 'lucide-react'
+import { useRole } from '@/lib/hooks/useRole'
 import {
   fetchAllLeadsVencidosIncrementally,
   setFilter,
@@ -58,6 +59,7 @@ export function ExpiredLeadsTable() {
   // Selectores Redux
   const filters = useSelector(state => state.leadsVencidos.filters)
   const pagination = useSelector(state => state.leadsVencidos.pagination)
+  const { isAdmin } = useRole()
   const { isLoading, isLoadingMore, isFullyLoaded, loadedCount, total, error } = useSelector(selectLoadingState)
   const filteredLeads = useSelector(selectFilteredLeadsVencidos)
   const paginatedLeads = useSelector(selectPaginatedLeadsVencidos)
@@ -128,29 +130,6 @@ export function ExpiredLeadsTable() {
     dispatch(fetchAllLeadsVencidosIncrementally())
   }
 
-  const handleExportCSV = () => {
-    const headers = ['Nombre', 'Email', 'Teléfono', 'Días sin contacto', 'Último contacto', 'Estado']
-    const rows = filteredLeads.map(lead => [
-      `${lead.nombre} ${lead.apellido}`,
-      lead.email,
-      lead.telefono,
-      lead.diasSinContacto.toString(),
-      lead.ultimoContacto,
-      lead.estado
-    ])
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
-    ].join('\n')
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `leads_vencidos_${new Date().toISOString().split('T')[0]}.csv`
-    link.click()
-  }
-
   // Paginación
   const totalPages = Math.ceil(filteredLeads.length / pagination.perPage)
   const hasActiveFilters = filters.search || filters.estado !== 'Todos'
@@ -194,25 +173,20 @@ export function ExpiredLeadsTable() {
                 {isFullyLoaded && ' ✓'}
               </Badge>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportCSV}
-              className="gap-2 bg-transparent"
-            >
-              <Download className="h-4 w-4" />
-              Exportar CSV
-            </Button>
           </div>
 
-          {/* Progress bar mientras carga */}
+          {/* Progress bar — solo admin */}
           {!isFullyLoaded && total > 0 && (
-            <div className="space-y-1">
-              <Progress value={loadProgress} className="h-1.5" />
-              <p className="text-xs text-muted-foreground">
-                Cargando... {Math.round(loadProgress)}%
-              </p>
-            </div>
+            isAdmin ? (
+              <div className="space-y-1">
+                <Progress value={loadProgress} className="h-1.5" />
+                <p className="text-xs text-muted-foreground">
+                  Cargando... {Math.round(loadProgress)}%
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Cargando datos en segundo plano...</p>
+            )
           )}
 
           {/* Filtros */}
