@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo, useState } from "react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppLayout } from "@/components/dashboard/app-layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -274,51 +274,92 @@ export default function ClientesPage() {
                     </div>
                   ) : (
                     paginatedClientes.map((cliente) => (
-                      <div
-                        key={cliente.id}
-                        className="p-4 hover:bg-muted/50 cursor-pointer active:bg-muted transition-colors"
-                        onClick={() => handleViewDetail(cliente.id)}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10 flex-shrink-0">
-                            <UserCheck className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium truncate">
-                                  {`${cliente.nombre} ${cliente.apellido}`.trim()}
-                                </p>
-                                <p className="text-sm text-muted-foreground truncate">
-                                  {cliente.email || cliente.telefono || 'Sin contacto'}
-                                </p>
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className={`text-xs flex-shrink-0 ${estadoColors[cliente.estadoCliente] || estadoColors.activo}`}
-                              >
-                                {cliente.estadoCliente || 'activo'}
-                              </Badge>
+                      <div key={cliente.id} className="hover:bg-muted/50 transition-colors">
+                        {/* Fila principal */}
+                        <div
+                          className="p-4 cursor-pointer"
+                          onClick={() => toggleRow(cliente.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/10 shrink-0">
+                              <UserCheck className="h-5 w-5 text-green-600" />
                             </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <span className="text-xs text-muted-foreground truncate">
-                                {cliente.curso || 'Sin curso'}
-                              </span>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="h-7 text-xs gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleContactClick(cliente);
-                                }}
-                              >
-                                <MessageCircle className="h-3 w-3" />
-                                Contactar
-                              </Button>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium truncate">
+                                    {`${cliente.nombre} ${cliente.apellido}`.trim()}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground truncate">
+                                    {cliente.email || cliente.telefono || 'Sin contacto'}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${estadoColors[cliente.estadoCliente] || estadoColors.activo}`}
+                                  >
+                                    {cliente.estadoCliente || 'activo'}
+                                  </Badge>
+                                  {expandedRow === cliente.id
+                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between mt-3">
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {cliente.localidad || cliente.curso || 'Sin datos'}
+                                </span>
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleEditCliente(cliente)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleViewDetail(cliente.id)}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleContactClick(cliente)}>
+                                    <MessageCircle className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
+                        {/* Desplegable mobile */}
+                        {expandedRow === cliente.id && (
+                          <div className="px-4 pb-4 bg-muted/10 border-t">
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm pt-3">
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Email</p>
+                                <p className="text-foreground text-xs">{cliente.email || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Teléfono</p>
+                                <p className="text-foreground text-xs">{cliente.telefono || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Género</p>
+                                <p className="text-foreground text-xs">{cliente.genero || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Localidad</p>
+                                <p className="text-foreground text-xs">{cliente.localidad || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Curso</p>
+                                <p className="text-foreground text-xs">{cliente.curso || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Fecha de Alta</p>
+                                <p className="text-foreground text-xs">{cliente.fechaAlta || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Registro</p>
+                                <p className="text-foreground text-xs">{cliente.createdAt || '-'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
@@ -348,9 +389,8 @@ export default function ClientesPage() {
                         </TableRow>
                       ) : (
                         paginatedClientes.map((cliente) => (
-                          <>
+                          <React.Fragment key={cliente.id}>
                             <TableRow
-                              key={cliente.id}
                               className={`hover:bg-muted/30 cursor-pointer ${expandedRow === cliente.id ? 'bg-muted/20' : ''}`}
                               onClick={() => toggleRow(cliente.id)}
                             >
@@ -499,7 +539,7 @@ export default function ClientesPage() {
                                 </TableCell>
                               </TableRow>
                             )}
-                          </>
+                          </React.Fragment>
                         ))
                       )}
                     </TableBody>

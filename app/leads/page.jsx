@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppLayout } from "@/components/dashboard/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -470,48 +470,82 @@ export default function LeadsPage() {
                 {/* Mobile: Cards */}
                 <div className="md:hidden divide-y">
                   {leads.map((contact) => (
-                    <div
-                      key={contact.id}
-                      className="p-4 hover:bg-muted/50 cursor-pointer active:bg-muted transition-colors"
-                      onClick={() => handleViewDetail(contact.id)}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
-                            {`${contact.nombre} ${contact.apellido}`.trim()}
-                          </p>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {contact.email || contact.telefono || 'Sin contacto'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline" className={`text-xs ${etapaColors[contact.etapaActual || contact.etapa] || ''}`}>
-                              {contact.etapaActual || contact.etapa}
-                            </Badge>
-                            {contact.curso && (
-                              <span className="text-xs text-muted-foreground truncate">
-                                {contact.curso}
-                              </span>
-                            )}
+                    <div key={contact.id} className="hover:bg-muted/50 transition-colors">
+                      {/* Fila principal */}
+                      <div className="p-4 cursor-pointer" onClick={() => toggleRow(contact.id)}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">
+                              {`${contact.nombre} ${contact.apellido}`.trim()}
+                            </p>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {contact.email || contact.telefono || 'Sin contacto'}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline" className={`text-xs ${etapaColors[contact.etapaActual || contact.etapa] || ''}`}>
+                                {contact.etapaActual || contact.etapa}
+                              </Badge>
+                              {contact.curso && (
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {contact.curso}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleEditLead(contact)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleViewDetail(contact.id)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleContactClick(contact)}>
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteClick(contact)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            {expandedRow === contact.id
+                              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                           </div>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="h-8 gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleContactClick(contact);
-                            }}
-                          >
-                            <MessageCircle className="h-3.5 w-3.5" />
-                            Contactar
-                          </Button>
-                          <span className="text-xs text-muted-foreground">
-                            {contact.ultimoContacto || 'Sin contacto'}
-                          </span>
-                        </div>
                       </div>
+                      {/* Desplegable mobile */}
+                      {expandedRow === contact.id && (
+                        <div className="px-4 pb-4 bg-muted/10 border-t">
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm pt-3">
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Email</p>
+                              <p className="text-foreground text-xs">{contact.email || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Teléfono</p>
+                              <p className="text-foreground text-xs">{contact.telefono || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Localidad</p>
+                              <p className="text-foreground text-xs">{contact.localidad || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Canal</p>
+                              <p className="text-foreground text-xs">{contact.canal || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Asesor</p>
+                              <p className="text-foreground text-xs">{contact.asesor || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Último Contacto</p>
+                              <p className="text-foreground text-xs">{contact.ultimoContacto || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Registro</p>
+                              <p className="text-foreground text-xs">{contact.fechaCreacion || contact.createdAt || '-'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -534,9 +568,8 @@ export default function LeadsPage() {
                     </TableHeader>
                     <TableBody>
                       {leads.map((contact) => (
-                        <>
+                        <React.Fragment key={contact.id}>
                           <TableRow
-                            key={contact.id}
                             className={`cursor-pointer ${expandedRow === contact.id ? 'bg-muted/20' : ''}`}
                             onClick={() => toggleRow(contact.id)}
                           >
@@ -719,7 +752,7 @@ export default function LeadsPage() {
                               </TableCell>
                             </TableRow>
                           )}
-                        </>
+                        </React.Fragment>
                       ))}
                     </TableBody>
                   </Table>
