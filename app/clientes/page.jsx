@@ -27,6 +27,7 @@ import { Search, Phone, Mail, MessageCircle, UserCheck, X, ChevronLeft, ChevronR
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
 import { ClienteDetailDrawer } from "@/components/cliente-detail-drawer";
+import { useRole } from "@/lib/hooks/useRole";
 import {
   fetchAllClientesIncrementally,
   setFilter,
@@ -52,6 +53,7 @@ const estadoColors = {
 export default function ClientesPage() {
   const dispatch = useDispatch();
   const hasFetched = useRef(false);
+  const { isAdmin } = useRole();
   
   // Estado para el modal de contacto
   const [contactModalOpen, setContactModalOpen] = useState(false);
@@ -150,28 +152,35 @@ export default function ClientesPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
             <p className="text-muted-foreground">
-              {loadedCount.toLocaleString()} de {total.toLocaleString()} clientes cargados
-              {isFullyLoaded && " ✓"}
+              {isFullyLoaded
+                ? `${loadedCount.toLocaleString()} clientes cargados ✓`
+                : `Cargando clientes...`}
             </p>
           </div>
         </div>
 
-        {/* Progress bar mientras carga */}
+        {/* Indicador de carga */}
         {!isFullyLoaded && total > 0 && (
-          <Card className="border-border/50">
-            <CardContent className="py-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Cargando clientes...</span>
-                  <span className="font-medium">{loadedCount.toLocaleString()} / {total.toLocaleString()}</span>
+          isAdmin ? (
+            <Card className="border-border/50">
+              <CardContent className="py-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Cargando clientes...</span>
+                    <span className="font-medium">{loadedCount.toLocaleString()} / {total.toLocaleString()}</span>
+                  </div>
+                  <Progress value={loadProgress} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {Math.round(loadProgress)}% - Puedes empezar a buscar mientras se cargan más datos
+                  </p>
                 </div>
-                <Progress value={loadProgress} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  {Math.round(loadProgress)}% - Puedes empezar a buscar mientras se cargan más datos
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <p className="text-xs text-muted-foreground px-1">
+              Cargando datos en segundo plano...
+            </p>
+          )
         )}
 
         <Card className="border-border/50">

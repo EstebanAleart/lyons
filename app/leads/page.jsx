@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Filter, Phone, Mail, MessageCircle, X, ChevronLeft, ChevronRight, Plus, Pencil, Eye, Trash2, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { useRole } from "@/lib/hooks/useRole";
 import { ContactModal } from "@/components/contact-modal";
 import { LeadFormModal } from "@/components/lead-form-modal";
 import { LeadDetailDrawer } from "@/components/lead-detail-drawer";
@@ -87,6 +88,7 @@ export default function LeadsPage() {
   const [leadToDelete, setLeadToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
+  const { isAdmin } = useRole();
   const filters = useSelector((state) => state.leads.filters);
   const { leads, totalFiltered, totalPages, currentPage, perPage } = useSelector(selectPaginatedLeads);
   const filterOptions = useSelector(selectUniqueFilterOptions);
@@ -227,20 +229,17 @@ export default function LeadsPage() {
 
   return (
     <AppLayout>
-      <main className="p-4 md:p-6 space-y-6">
+      <main className="p-4 md:p-6 space-y-6 min-w-0 w-full">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Contactos</h1>
             <div className="flex items-center gap-2">
               <p className="text-muted-foreground">
-                {totalFiltered.toLocaleString()} de {loadedCount.toLocaleString()} contactos cargados
+                {isFullyLoaded
+                  ? `${loadedCount.toLocaleString()} contactos cargados ✓`
+                  : 'Cargando contactos...'}
               </p>
-              {!isFullyLoaded && (
-                <span className="text-xs text-muted-foreground">
-                  (cargando más en segundo plano...)
-                </span>
-              )}
             </div>
           </div>
           <div className="flex gap-2">
@@ -251,24 +250,30 @@ export default function LeadsPage() {
           </div>
         </div>
 
-        {/* Loading Progress */}
+        {/* Indicador de carga */}
         {!isFullyLoaded && (
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="py-3">
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">Cargando contactos...</span>
-                    <span className="text-sm text-muted-foreground">
-                      {loadedCount.toLocaleString()} / {total.toLocaleString()}
-                    </span>
+          isAdmin ? (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="py-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">Cargando contactos...</span>
+                      <span className="text-sm text-muted-foreground">
+                        {loadedCount.toLocaleString()} / {total.toLocaleString()}
+                      </span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
                   </div>
-                  <Progress value={progress} className="h-2" />
+                  <div className="text-2xl font-bold text-primary">{progress}%</div>
                 </div>
-                <div className="text-2xl font-bold text-primary">{progress}%</div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Cargando datos en segundo plano...
+            </p>
+          )
         )}
 
         {/* Filters */}
@@ -452,7 +457,7 @@ export default function LeadsPage() {
         </Card>
 
         {/* Table - Desktop / Cards - Mobile */}
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardContent className="p-0">
             {isLoading && loadedCount === 0 ? (
               <div className="h-[400px] flex items-center justify-center">
@@ -551,18 +556,17 @@ export default function LeadsPage() {
                 </div>
 
                 {/* Desktop: Table */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto w-full min-w-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-8"></TableHead>
+                        <TableHead className="w-6"></TableHead>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Contacto</TableHead>
                         <TableHead>Curso</TableHead>
                         <TableHead>Canal</TableHead>
                         <TableHead>Etapa</TableHead>
                         <TableHead>Asesor</TableHead>
-                        <TableHead>Último Contacto</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -646,7 +650,6 @@ export default function LeadsPage() {
                               </Select>
                             </TableCell>
                             <TableCell>{contact.asesor}</TableCell>
-                            <TableCell>{contact.ultimoContacto}</TableCell>
                             <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-end gap-1">
                                 <Button

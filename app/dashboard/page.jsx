@@ -54,14 +54,15 @@ export default async function DashboardPage() {
     )
   }
   
-  // Verificar que sea asesor activo - FUERA DEL TRY-CATCH
-  if (userData.rol !== "asesor" || !userData.activo) {
+  // Verificar que sea admin o asesor activo
+  const rolesPermitidos = ["asesor", "admin"]
+  if (!rolesPermitidos.includes(userData.rol) || !userData.activo) {
     redirect("/no-autorizado")
   }
-  
+
   // Usuario autorizado - mostrar dashboard
   return (
-    <AppLayout>
+    <AppLayout userRol={userData.rol}>
       <main className="p-4 md:p-6 space-y-6">
         <DashboardHeader />
         <KpiCards />

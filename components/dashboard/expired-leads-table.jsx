@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Phone, Mail, AlertCircle, Search, ChevronLeft, ChevronRight, X, MessageCircle, Eye, Pencil } from 'lucide-react'
+import { useRole } from '@/lib/hooks/useRole'
 import {
   fetchAllLeadsVencidosIncrementally,
   setFilter,
@@ -58,6 +59,7 @@ export function ExpiredLeadsTable() {
   // Selectores Redux
   const filters = useSelector(state => state.leadsVencidos.filters)
   const pagination = useSelector(state => state.leadsVencidos.pagination)
+  const { isAdmin } = useRole()
   const { isLoading, isLoadingMore, isFullyLoaded, loadedCount, total, error } = useSelector(selectLoadingState)
   const filteredLeads = useSelector(selectFilteredLeadsVencidos)
   const paginatedLeads = useSelector(selectPaginatedLeadsVencidos)
@@ -173,14 +175,18 @@ export function ExpiredLeadsTable() {
             </div>
           </div>
 
-          {/* Progress bar mientras carga */}
+          {/* Progress bar — solo admin */}
           {!isFullyLoaded && total > 0 && (
-            <div className="space-y-1">
-              <Progress value={loadProgress} className="h-1.5" />
-              <p className="text-xs text-muted-foreground">
-                Cargando... {Math.round(loadProgress)}%
-              </p>
-            </div>
+            isAdmin ? (
+              <div className="space-y-1">
+                <Progress value={loadProgress} className="h-1.5" />
+                <p className="text-xs text-muted-foreground">
+                  Cargando... {Math.round(loadProgress)}%
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Cargando datos en segundo plano...</p>
+            )
           )}
 
           {/* Filtros */}

@@ -14,6 +14,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { LayoutDashboard, Users, UserCheck, BookOpen, Activity, LogOut } from "lucide-react";
+import { useRole } from "@/lib/hooks/useRole";
+import { signOut } from "next-auth/react";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -24,12 +26,13 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { isAdmin } = useRole();
 
   return (
     <Sidebar>
       <SidebarHeader className="border-b">
         <div className="flex items-center justify-between px-2 py-3">
-          <Link href="/dashboard" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <Image
               src="/images/logo-icon.png"
               alt="Logo"
@@ -62,20 +65,24 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t">
         <SidebarMenu>
+          {isAdmin && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === "/system"} tooltip="Salud del Sistema">
+                <Link href="/system">
+                  <Activity />
+                  <span>Sistema</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/system"} tooltip="Salud del Sistema">
-              <Link href="/system">
-                <Activity />
-                <span>Sistema</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Cerrar sesión">
-              <Link href="/">
-                <LogOut />
-                <span>Cerrar sesión</span>
-              </Link>
+            <SidebarMenuButton
+              tooltip="Cerrar sesión"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="cursor-pointer"
+            >
+              <LogOut />
+              <span>Cerrar sesión</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
